@@ -85,16 +85,16 @@ class Orpheus:
         self.settings_location = 'config/settings.json'
         self.session_storage_location = 'config/loginstorage.bin'
 
-        os.mkdir('config') if not os.path.exists('config') else None
+        os.makedirs('config') if not os.path.exists('config') else None
 
-        self.settings = json.loads(open(self.settings_location, 'r').read()) if os.path.exists(self.settings_location) else {}
+        self.settings = json.load(open(self.settings_location,)) if os.path.exists(self.settings_location) else {}
 
         try:
             logging.basicConfig(level=logging.DEBUG) if self.settings['global']['advanced']['debug_mode'] else None
         except:
             pass
 
-        os.mkdir('extensions') if not os.path.exists('extensions') else None
+        os.makedirs('extensions') if not os.path.exists('extensions') else None
         for extension in os.listdir('extensions'):  # Loading extensions
             if os.path.isdir(f'extensions/{extension}') and os.path.exists(f'extensions/{extension}/interface.py'):
                 class_ = getattr(importlib.import_module(f'extensions.{extension}.interface'), 'OrpheusExtension', None)
@@ -105,7 +105,7 @@ class Orpheus:
                     raise Exception('Error loading extension: "{extension}"')
 
         # Module preparation (not loaded yet for performance purposes)
-        os.mkdir('modules') if not os.path.exists('modules') else None
+        os.makedirs('modules') if not os.path.exists('modules') else None
         module_list = [module.lower() for module in os.listdir('modules') if os.path.exists(f'modules/{module}/interface.py')]
         if not module_list or module_list == ['example']:
             print('No modules are installed, quitting')
@@ -341,7 +341,7 @@ class Orpheus:
 
 def orpheus_core_download(orpheus_session: Orpheus, media_to_download, third_party_modules, separate_download_module, output_path):
     downloader = Downloader(orpheus_session.settings['global'], orpheus_session.module_controls, output_path)
-    os.mkdir('temp') if not os.path.exists('temp') else None
+    os.makedirs('temp') if not os.path.exists('temp') else None
 
     for media in media_to_download:
         mainmodule = media.service_name

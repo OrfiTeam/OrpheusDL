@@ -41,8 +41,10 @@ class Downloader:
         number_of_tracks = len(playlist_info.tracks)
         self.print(f'Number of tracks: {number_of_tracks!s}')
         self.print(f'Service: {self.module_settings[self.service_name].service_name}')
-        path = self.path + self.global_settings['formatting']['playlist_format'].format(**asdict(playlist_info)) + '/'
 
+        # Clean up playlist tags
+        playlist_tags = {k: sanitise_name(v) for k, v in asdict(playlist_info).items()}
+        path = self.path + self.global_settings['formatting']['playlist_format'].format(**playlist_tags) + '/'
         os.makedirs(path) if not os.path.exists(path) else None
         cover_path = f'{path}Cover.{playlist_info.cover_type}'
         if playlist_info.cover_url:
@@ -102,7 +104,6 @@ class Downloader:
 
         # Clean up album tags
         album_tags = {k: sanitise_name(v) for k, v in asdict(album_info).items()}
-
         if artist_name:
             album_tags['artist_name'] = artist_name
             path = self.path + self.global_settings['formatting']['artist_format'].format(**album_tags) + '/'
@@ -377,7 +378,7 @@ class Downloader:
                 conv_flags = conversion_flags[new_codec] if new_codec in conversion_flags else {}
                 new_track_location = f'{track_location_name}.{new_codec_data.container.name}'
                 
-                stream: ffmpeg = ffmpeg.input(track_location, hide_banner=None, y=None)
+                stream = ffmpeg.input(track_location, hide_banner=None, y=None)
                 stream.output(new_track_location, acodec=new_codec.name.lower(), **conv_flags, loglevel='error').run()
                 silentremove(track_location)
 
