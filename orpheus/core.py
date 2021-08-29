@@ -94,6 +94,7 @@ class Orpheus:
         except:
             pass
 
+        os.mkdir('extensions') if not os.path.exists('extensions') else None
         for extension in os.listdir('extensions'):  # Loading extensions
             if os.path.isdir(f'extensions/{extension}') and os.path.exists(f'extensions/{extension}/interface.py'):
                 class_ = getattr(importlib.import_module(f'extensions.{extension}.interface'), 'OrpheusExtension', None)
@@ -104,6 +105,7 @@ class Orpheus:
                     raise Exception('Error loading extension: "{extension}"')
 
         # Module preparation (not loaded yet for performance purposes)
+        os.mkdir('modules') if not os.path.exists('modules') else None
         module_list = [module.lower() for module in os.listdir('modules') if os.path.exists(f'modules/{module}/interface.py')]
         if not module_list or module_list == ['example']:
             print('No modules are installed, quitting')

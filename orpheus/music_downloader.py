@@ -265,9 +265,11 @@ class Downloader:
             else:
                 self.print('Third-party module could not find cover, using fallback')
                 os.rename(default_temp, cover_temp_location)
-        elif self.global_settings['covers']['save_external'] and ModuleModes.covers in self.module_settings[self.service_name].flags:
-            ext_cover_info: CoverInfo = self.service.get_track_cover(track_id, ext_cover_options)
-            download_file(ext_cover_info.url, f'{track_location_name}.{ext_cover_info.file_type.name}')
+        else:
+            download_file(track_info.cover_url, cover_temp_location)
+            if self.global_settings['covers']['save_external'] and ModuleModes.covers in self.module_settings[self.service_name].flags:
+                ext_cover_info: CoverInfo = self.service.get_track_cover(track_id, ext_cover_options)
+                download_file(ext_cover_info.url, f'{track_location_name}.{ext_cover_info.file_type.name}')
 
         # Get lyrics
         if self.global_settings['lyrics']['embed_lyrics'] or self.global_settings['lyrics']['save_synced_lyrics']:

@@ -6,5 +6,7 @@ venv
 config/
 downloads/
 temp/
+moodules/
+extensions/
 
 .python-version

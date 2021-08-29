@@ -30,10 +30,13 @@ def main():
     parser.add_argument('-cv', '--covers', default='default', help='Override module to get covers from')
     parser.add_argument('-cr', '--credits', default='default', help='Override module to get credits from')
     parser.add_argument('-sd', '--separatedownload', default='default', help='Select a different module that will download the playlist instead of the main module. Only for playlists.')
-    parser.add_argument('arguments', nargs='+', help=help_)
+    parser.add_argument('arguments', nargs='*', help=help_)
     args = parser.parse_args()
 
     orpheus = Orpheus(args.private)
+    if not args.arguments:
+        print('Warning: no arguments given! Use python3 orpheus.py --help for information on usage.')
+
     orpheus_mode = args.arguments[0].lower()
     if orpheus_mode == 'settings': # These should call functions in a separate py file, that does not yet exist
         setting = args.arguments[1].lower()
@@ -87,6 +90,7 @@ def main():
     else:
         path = args.output if args.output else orpheus.settings['global']['general']['download_path']
         path = path[:-1] if path[-1] == '/' else path  # removes '/' from end if it exists
+        os.mkdir(path) if not os.path.exists(path) else None
 
         media_types = '/'.join(e.name for e in DownloadTypeEnum)
 
