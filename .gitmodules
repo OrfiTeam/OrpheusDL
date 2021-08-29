@@ -1,0 +1,4 @@
+[submodule "modules/tidal"]
+	path = modules/tidal
+	url = https://github.com/Dniel97/orpheusdl-tidal.git
+	branch = master

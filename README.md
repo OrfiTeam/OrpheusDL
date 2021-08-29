@@ -44,30 +44,35 @@ Follow these steps to get a local copy of Orpheus up and running:
 
 ### Installation
 
-1. Clone the repo
-   ```sh
-   git clone https://github.com/yarrm80s/orpheusdl.git
-   ```
+1. Clone the repo 
+   * Without modules:
+      ```shell
+      git clone https://github.com/yarrm80s/orpheusdl.git
+      ```
+   * Or with all modules
+      ```shell
+      git clone --recurse-submodules https://github.com/yarrm80s/orpheusdl.git
+      ```
 2. Install all requirements
-   ```sh
+   ```shell
    pip install -r requirements.txt
    ```
 3. Run the program at least once
-   ```sh
+   ```shell
    python3 orpheus.py
    ```
-3. Enter your credentials in `config/settings.json`
+4. Enter your credentials in `config/settings.json`
 
 <!-- USAGE EXAMPLES -->
 ## Usage
 
 Just call `orpheus.py` with any link you want to archive, for example Qobuz:
-    ```sh
+    ```shell
     python3 orpheus.py https://open.qobuz.com/album/c9wsrrjh49ftb
     ```
 
 Alternatively do a search (luckysearch to automatically select the first option):
-    ```sh
+    ```shell
     python3 orpheus.py search qobuz track darkside alan walker
     ```
 
