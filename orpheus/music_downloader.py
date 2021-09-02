@@ -236,7 +236,7 @@ class Downloader:
 
         print()
         covers_module_name = self.third_party_modules[ModuleModes.covers]
-        self.print('Downloading artwork' + (' with ' + covers_module_name) if covers_module_name else '')
+        self.print('Downloading artwork' + (' with ' + covers_module_name if covers_module_name else ''))
         if covers_module_name:
             default_temp = download_to_temp(track_info.cover_url)
             test_cover_options = CoverOptions(file_type=ImageFileTypeEnum.jpg, resolution=get_image_resolution(default_temp), compression=CoverCompressionEnum.high)
@@ -266,11 +266,14 @@ class Downloader:
             else:
                 self.print('Third-party module could not find cover, using fallback')
                 os.rename(default_temp, cover_temp_location)
-        else:
-            download_file(track_info.cover_url, cover_temp_location)
-            if self.global_settings['covers']['save_external'] and ModuleModes.covers in self.module_settings[self.service_name].flags:
+        elif ModuleModes.covers in self.module_settings[self.service_name].module_supported_modes:
+            main_cover_info: CoverInfo = self.service.get_track_cover(track_id, jpg_cover_options)
+            download_file(main_cover_info.url, cover_temp_location)
+            if self.global_settings['covers']['save_external']:
                 ext_cover_info: CoverInfo = self.service.get_track_cover(track_id, ext_cover_options)
                 download_file(ext_cover_info.url, f'{track_location_name}.{ext_cover_info.file_type.name}')
+        else:
+            download_file(track_info.cover_url, cover_temp_location)
 
         # Get lyrics
         if self.global_settings['lyrics']['embed_lyrics'] or self.global_settings['lyrics']['save_synced_lyrics']:
@@ -351,6 +354,7 @@ class Downloader:
             self.print('Warning: codec_conversions setting is invalid!')
         
         # Do conversions
+        save_original, new_track_location = True, None
         if codec in conversions:
             old_codec_data = codec_data[codec]
             new_codec = conversions[codec]
@@ -380,15 +384,16 @@ class Downloader:
                 
                 stream = ffmpeg.input(track_location, hide_banner=None, y=None)
                 stream.output(new_track_location, acodec=new_codec.name.lower(), **conv_flags, loglevel='error').run()
-                silentremove(track_location)
 
-                container = new_codec_data.container
-                track_location = new_track_location
+                if not self.global_settings['advanced']['conversion_save_original']:
+                    silentremove(track_location)
+                    save_original = False
 
         # Finally tag file
         self.print('Tagging file')
         try:
-            tag_file(track_location, cover_temp_location, track_info.tags, container)
+            tag_file(track_location, cover_temp_location, track_info.tags, container) if save_original else None
+            tag_file(new_track_location, cover_temp_location, track_info.tags, new_codec_data.container) if new_track_location else None
         except TagSavingFailure:
             self.print('Tagging failed, tags saved to text file')
         silentremove(cover_temp_location)

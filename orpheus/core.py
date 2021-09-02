@@ -73,6 +73,7 @@ class Orpheus:
                         "compression_level": "5"
                     }
                 },
+                "conversion_save_original": False,
                 "cover_variance_threshold": 8,
                 "debug_mode": False,
                 "disable_subscription_checks": False,
