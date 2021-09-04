@@ -216,6 +216,14 @@ class Downloader:
         to_print += f', sample rate: {track_info.sample_rate}kHz' if track_info.sample_rate else ''
         self.print(to_print)
 
+        if track_info.codec in [CodecEnum.EAC3, CodecEnum.MHA1, CodecEnum.AC4] and not self.global_settings['codecs']['spatial_codecs']:
+            self.print('Spatial codecs are disabled, if you want to download it, set "spatial_codecs": true')
+            return None
+
+        if track_info.codec in [CodecEnum.MQA] and not self.global_settings['codecs']['spatial_codecs']:
+            self.print('Proprietary codecs are disabled, if you want to download it, set "proprietary_codecs": true')
+            return None
+
         # Begin process
         self.print("Downloading track file")
         try:
