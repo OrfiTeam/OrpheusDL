@@ -189,20 +189,6 @@ class Downloader:
         self.set_indent_number(indent_level)
         self.print(f'=== Downloading track {track_name} ({track_id}) ===', drop_level=1)
 
-        if self.download_mode is DownloadTypeEnum.track:
-            track_location_name = self.path + self.global_settings['formatting']['single_full_path_format'].format(**track_tags)
-        else:
-            album_location = album_location.replace('\\', '/')
-            album_location += 'CD' + track_info.tags.disc_number if track_info.tags.total_discs and int(track_info.tags.total_discs) > 1 else ''
-            os.makedirs(album_location) if not os.path.exists(album_location) and album_location else None
-            track_location_name = album_location + self.global_settings['formatting']['track_filename_format'].format(**track_tags)
-        
-        track_location = f'{track_location_name}.{container.name}'
-        if os.path.isfile(track_location) and not self.global_settings['advanced']['ignore_existing_files']:
-            self.print('Track file already exists', drop_level=1)
-            self.print(f'=== Track {track_id} skipped ===', drop_level=1)
-            return
-
         if self.download_mode is not DownloadTypeEnum.album and track_info.album_name:
             self.print(f'Album: {track_info.album_name} ({track_info.album_id})')
         if self.download_mode is not DownloadTypeEnum.album and self.download_mode is not DownloadTypeEnum.artist and track_info.artist_name:
@@ -216,13 +202,24 @@ class Downloader:
         to_print += f', sample rate: {track_info.sample_rate}kHz' if track_info.sample_rate else ''
         self.print(to_print)
 
-        if track_info.codec in [CodecEnum.EAC3, CodecEnum.MHA1, CodecEnum.AC4] and not self.global_settings['codecs']['spatial_codecs']:
-            self.print('Spatial codecs are disabled, if you want to download it, set "spatial_codecs": true')
-            return None
+        # Check if track_info returns error, display it and return this function to not download the track
+        if track_info.error:
+            self.print(track_info.error)
+            return
 
-        if track_info.codec in [CodecEnum.MQA] and not self.global_settings['codecs']['spatial_codecs']:
-            self.print('Proprietary codecs are disabled, if you want to download it, set "proprietary_codecs": true')
-            return None
+        if self.download_mode is DownloadTypeEnum.track:
+            track_location_name = self.path + self.global_settings['formatting']['single_full_path_format'].format(**track_tags)
+        else:
+            album_location = album_location.replace('\\', '/')
+            album_location += 'CD' + track_info.tags.disc_number if track_info.tags.total_discs and int(track_info.tags.total_discs) > 1 else ''
+            os.makedirs(album_location) if not os.path.exists(album_location) and album_location else None
+            track_location_name = album_location + self.global_settings['formatting']['track_filename_format'].format(**track_tags)
+        
+        track_location = f'{track_location_name}.{container.name}'
+        if os.path.isfile(track_location) and not self.global_settings['advanced']['ignore_existing_files']:
+            self.print('Track file already exists', drop_level=1)
+            self.print(f'=== Track {track_id} skipped ===', drop_level=1)
+            return
 
         # Begin process
         self.print("Downloading track file")
