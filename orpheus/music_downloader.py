@@ -128,6 +128,7 @@ class Downloader:
                 self.set_indent_number(2)
 
             self.print(f'=== Downloading album {album_info.album_name} ({album_id}) ===', drop_level=1)
+            self.print(f'Year: {album_info.album_year}') if album_info.album_year else None
             self.print(f'Artist: {album_info.artist_name} ({album_info.artist_id})')
             self.print(f'Number of tracks: {number_of_tracks!s}')
             self.print(f'Service: {self.module_settings[self.service_name].service_name}')

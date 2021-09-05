@@ -31,6 +31,7 @@ class SearchResult:
     result_id: str
     name: Optional[str] = None
     artists: Optional[list] = None
+    year: Optional[str] = None
     explicit: Optional[bool] = False
     additional: Optional[list] = None
 
@@ -220,6 +221,8 @@ class AlbumInfo:
     artist_name: str
     artist_id: str
     tracks: list
+    album_year: Optional[str] = None
+    explicit: Optional[bool] = None
     booklet_url: Optional[str] = None
     cover_url: Optional[str] = None
     cover_type: Optional[ImageFileTypeEnum] = ImageFileTypeEnum.jpg
@@ -234,6 +237,8 @@ class PlaylistInfo:
     playlist_name: str
     playlist_creator_name: str
     tracks: list
+    playlist_year: Optional[str] = None
+    explicit: Optional[bool] = None
     playlist_creator_id: Optional[str] = None
     cover_url: Optional[str] = None
     cover_type: Optional[ImageFileTypeEnum] = ImageFileTypeEnum.jpg
