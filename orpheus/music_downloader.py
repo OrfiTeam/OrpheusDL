@@ -111,11 +111,14 @@ class Downloader:
             path = self.path + self.global_settings['formatting']['album_format'].format(**album_tags) + '/'
         os.makedirs(path) if not os.path.exists(path) else None
 
-        cover_path = f'{path}Cover.{album_info.cover_type}'
+        cover_path = f'{path}Cover.{album_info.cover_type.name}'
         if album_info.cover_url:
             self.print('Downloading album cover')
             download_file(album_info.cover_url, cover_path)
-        
+
+        if album_info.animated_cover_url and self.global_settings['covers']['save_animated_cover']:
+            self.print('Downloading animated album cover')
+            download_file(album_info.animated_cover_url, f'{path}Cover.mp4', enable_progress_bar=True)
         
         if album_info.booklet_url:
             self.print('Downloading booklet')
@@ -210,6 +213,8 @@ class Downloader:
 
         if self.download_mode is DownloadTypeEnum.track:
             track_location_name = self.path + self.global_settings['formatting']['single_full_path_format'].format(**track_tags)
+            track_folder = track_location_name[:track_location_name.rfind('/')]
+            os.makedirs(track_folder) if not os.path.exists(track_folder) else None
         else:
             album_location = album_location.replace('\\', '/')
             album_location += 'CD' + track_info.tags.disc_number if track_info.tags.total_discs and int(track_info.tags.total_discs) > 1 else ''

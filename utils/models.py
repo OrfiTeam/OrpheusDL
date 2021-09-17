@@ -225,6 +225,7 @@ class AlbumInfo:
     explicit: Optional[bool] = None
     booklet_url: Optional[str] = None
     cover_url: Optional[str] = None
+    animated_cover_url: Optional[str] = None
     cover_type: Optional[ImageFileTypeEnum] = ImageFileTypeEnum.jpg
 
 @dataclass

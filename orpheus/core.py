@@ -59,6 +59,7 @@ class Orpheus:
                 "compression": "high",
                 "main_resolution": 1400,
                 "save_external": False,
+                "save_animated_cover": True,
                 "external_resolution": 3000,
                 "external_png": True
             },
