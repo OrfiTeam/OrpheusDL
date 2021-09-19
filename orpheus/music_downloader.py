@@ -110,11 +110,14 @@ class Downloader:
             path = self.path + self.global_settings['formatting']['album_format'].format(**album_tags) + '/'
         os.makedirs(path) if not os.path.exists(path) else None
 
-        cover_path = f'{path}Cover.{album_info.cover_type}'
+        cover_path = f'{path}Cover.{album_info.cover_type.name}'
         if album_info.cover_url:
             self.print('Downloading album cover')
             download_file(album_info.cover_url, cover_path)
-        
+
+        if album_info.animated_cover_url and self.global_settings['covers']['save_animated_cover']:
+            self.print('Downloading animated album cover')
+            download_file(album_info.animated_cover_url, f'{path}Cover.mp4', enable_progress_bar=True)
         
         if album_info.booklet_url:
             self.print('Downloading booklet')
@@ -127,6 +130,7 @@ class Downloader:
                 self.set_indent_number(2)
 
             self.print(f'=== Downloading album {album_info.album_name} ({album_id}) ===', drop_level=1)
+            self.print(f'Year: {album_info.album_year}') if album_info.album_year else None
             self.print(f'Artist: {album_info.artist_name} ({album_info.artist_id})')
             self.print(f'Number of tracks: {number_of_tracks!s}')
             self.print(f'Service: {self.module_settings[self.service_name].service_name}')
@@ -189,8 +193,28 @@ class Downloader:
         self.set_indent_number(indent_level)
         self.print(f'=== Downloading track {track_name} ({track_id}) ===', drop_level=1)
 
+        if self.download_mode is not DownloadTypeEnum.album and track_info.album_name:
+            self.print(f'Album: {track_info.album_name} ({track_info.album_id})')
+        if self.download_mode is not DownloadTypeEnum.album and self.download_mode is not DownloadTypeEnum.artist and track_info.artist_name:
+            self.print(f'Artist: {track_info.artist_name} ({track_info.artist_id})')
+        if self.download_mode is DownloadTypeEnum.track:
+            self.print(f'Service: {self.module_settings[self.service_name].service_name}')
+
+        to_print = 'Codec: ' + codec_data[codec].pretty_name
+        to_print += f', bitrate: {track_info.bitrate}kbps' if track_info.bitrate else ''
+        to_print += f', bit depth: {track_info.bit_depth}bit' if track_info.bit_depth else ''
+        to_print += f', sample rate: {track_info.sample_rate}kHz' if track_info.sample_rate else ''
+        self.print(to_print)
+
+        # Check if track_info returns error, display it and return this function to not download the track
+        if track_info.error:
+            self.print(track_info.error)
+            return
+
         if self.download_mode is DownloadTypeEnum.track:
             track_location_name = self.path + self.global_settings['formatting']['single_full_path_format'].format(**track_tags)
+            track_folder = track_location_name[:track_location_name.rfind('/')]
+            os.makedirs(track_folder) if not os.path.exists(track_folder) else None
         else:
             album_location = album_location.replace('\\', '/')
             album_location += 'CD' + track_info.tags.disc_number if track_info.tags.total_discs and int(track_info.tags.total_discs) > 1 else ''
@@ -205,19 +229,6 @@ class Downloader:
             self.print('Track file already exists', drop_level=1)
             self.print(f'=== Track {track_id} skipped ===', drop_level=1)
             return
-
-        if self.download_mode is not DownloadTypeEnum.album and track_info.album_name:
-            self.print(f'Album: {track_info.album_name} ({track_info.album_id})')
-        if self.download_mode is not DownloadTypeEnum.album and self.download_mode is not DownloadTypeEnum.artist and track_info.artist_name:
-            self.print(f'Artist: {track_info.artist_name} ({track_info.artist_id})')
-        if self.download_mode is DownloadTypeEnum.track:
-            self.print(f'Service: {self.module_settings[self.service_name].service_name}')
-
-        to_print = 'Codec: ' + codec_data[codec].pretty_name
-        to_print += f', bitrate: {track_info.bitrate}kbps' if track_info.bitrate else ''
-        to_print += f', bit depth: {track_info.bit_depth}bit' if track_info.bit_depth else ''
-        to_print += f', sample rate: {track_info.sample_rate}kHz' if track_info.sample_rate else ''
-        self.print(to_print)
 
         # Begin process
         self.print("Downloading track file")
