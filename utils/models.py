@@ -226,8 +226,8 @@ class AlbumInfo:
     explicit: Optional[bool] = None
     booklet_url: Optional[str] = None
     cover_url: Optional[str] = None
-    animated_cover_url: Optional[str] = None
     cover_type: Optional[ImageFileTypeEnum] = ImageFileTypeEnum.jpg
+    animated_cover_url: Optional[str] = None
 
 @dataclass
 class ArtistInfo:
@@ -244,6 +244,7 @@ class PlaylistInfo:
     playlist_creator_id: Optional[str] = None
     cover_url: Optional[str] = None
     cover_type: Optional[ImageFileTypeEnum] = ImageFileTypeEnum.jpg
+    animated_cover_url: Optional[str] = None
 
 @dataclass
 class TrackInfo:
@@ -256,9 +257,10 @@ class TrackInfo:
     tags: Tags
     codec: CodecEnum
     cover_url: str
+    animated_cover_url: Optional[str] = None
     bit_depth: Optional[int] = 16
     sample_rate: Optional[float] = 44.1
-    bitrate: Optional[str] = None
+    bitrate: Optional[int] = None
     file_url: Optional[str] = None
     file_url_headers: Optional[dict] = None
     error: Optional[str] = None
