@@ -57,12 +57,12 @@ def download_file(url, file_location, headers={}, enable_progress_bar=False, ind
             f.write(r.content)
 
 # root mean square code by Charlie Clark: https://code.activestate.com/recipes/577630-comparing-two-images/
-def rmsdiff(im1, im2):
-    h = ImageChops.difference(im1, im2).convert('L').histogram()
-    return math.sqrt(reduce(operator.add, map(lambda h, i: h*(i**2), h, range(256))) / (float(im1.size[0]) * im1.size[1]))
+def compare_images(image_1, image_2):
+    with Image.open(image_1) as im1, Image.open(image_2) as im2:
+        h = ImageChops.difference(im1, im2).convert('L').histogram()
+        return math.sqrt(reduce(operator.add, map(lambda h, i: h*(i**2), h, range(256))) / (float(im1.size[0]) * im1.size[1]))
 
 # TODO: check if not closing the files causes issues, and see if there's a way to use the context manager with lambda expressions
-compare_images = lambda image_1, image_2 : rmsdiff(Image.open(image_1), Image.open(image_2))
 get_image_resolution = lambda image_location : Image.open(image_location).size[0]
 
 def silentremove(filename):

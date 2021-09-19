@@ -146,6 +146,7 @@ class CodecOptions:
 class ImageFileTypeEnum(Flag):
     jpg = auto()
     png = auto()
+    webp = auto()
 
 class CoverCompressionEnum(Flag):
     low = auto()

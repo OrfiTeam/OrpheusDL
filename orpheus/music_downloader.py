@@ -41,10 +41,8 @@ class Downloader:
         number_of_tracks = len(playlist_info.tracks)
         self.print(f'Number of tracks: {number_of_tracks!s}')
         self.print(f'Service: {self.module_settings[self.service_name].service_name}')
+        path = self.path + self.global_settings['formatting']['playlist_format'].format(**asdict(playlist_info)) + '/'
 
-        # Clean up playlist tags
-        playlist_tags = {k: sanitise_name(v) for k, v in asdict(playlist_info).items()}
-        path = self.path + self.global_settings['formatting']['playlist_format'].format(**playlist_tags) + '/'
         os.makedirs(path) if not os.path.exists(path) else None
         cover_path = f'{path}Cover.{playlist_info.cover_type}'
         if playlist_info.cover_url:
@@ -104,6 +102,7 @@ class Downloader:
 
         # Clean up album tags
         album_tags = {k: sanitise_name(v) for k, v in asdict(album_info).items()}
+
         if artist_name:
             album_tags['artist_name'] = artist_name
             path = self.path + self.global_settings['formatting']['artist_format'].format(**album_tags) + '/'
@@ -181,7 +180,8 @@ class Downloader:
         zfill_lambda = lambda input : sanitise_name(str(input)).zfill(zfill_number) if input is not None else None
 
         # Separate copy of tags for formatting purposes
-        track_tags = {k: (zfill_lambda(v) if k in ['track_number', 'total_tracks', 'disc_number', 'total_discs'] else sanitise_name(v)) for k, v in asdict(track_info.tags).items()}
+        zfill_enabled, zfill_list = self.global_settings['formatting']['enable_zfill'], ['track_number', 'total_tracks', 'disc_number', 'total_discs']
+        track_tags = {k: (zfill_lambda(v) if zfill_enabled and k in zfill_list else sanitise_name(v)) for k, v in asdict(track_info.tags).items()}
         track_name = track_tags['title']
         codec = track_info.codec
         container = codec_data[codec].container
@@ -195,7 +195,10 @@ class Downloader:
             album_location = album_location.replace('\\', '/')
             album_location += 'CD' + track_info.tags.disc_number if track_info.tags.total_discs and int(track_info.tags.total_discs) > 1 else ''
             os.makedirs(album_location) if not os.path.exists(album_location) and album_location else None
-            track_location_name = album_location + self.global_settings['formatting']['track_filename_format'].format(**track_tags)
+            if track_info.tags.total_tracks == 1:
+                track_location_name = album_location + self.global_settings['formatting']['single_full_path_format'].format(**track_tags)
+            else:
+                track_location_name = album_location + self.global_settings['formatting']['track_filename_format'].format(**track_tags)
         
         track_location = f'{track_location_name}.{container.name}'
         if os.path.isfile(track_location) and not self.global_settings['advanced']['ignore_existing_files']:
@@ -229,14 +232,15 @@ class Downloader:
             return
 
         cover_temp_location = create_temp_filename()
-        cover_compression = CoverCompressionEnum[self.global_settings['covers']['compression'].lower()]
-        jpg_cover_options = CoverOptions(file_type=ImageFileTypeEnum.jpg, resolution=self.global_settings['covers']['main_resolution'], compression=cover_compression)
-        ext_cover_options = CoverOptions(file_type=ImageFileTypeEnum.png if self.global_settings['covers']['external_png'] else ImageFileTypeEnum.jpg, \
-            resolution=self.global_settings['covers']['external_resolution'], compression=cover_compression)
+        jpg_cover_options = CoverOptions(file_type=ImageFileTypeEnum.jpg, resolution=self.global_settings['covers']['main_resolution'], \
+            compression=CoverCompressionEnum[self.global_settings['covers']['main_compression'].lower()])
+        ext_cover_options = CoverOptions(file_type=ImageFileTypeEnum[self.global_settings['covers']['external_format']], \
+            resolution=self.global_settings['covers']['external_resolution'], \
+            compression=CoverCompressionEnum[self.global_settings['covers']['external_compression'].lower()])
 
         print()
         covers_module_name = self.third_party_modules[ModuleModes.covers]
-        self.print('Downloading artwork' + (' with ' + covers_module_name if covers_module_name else ''))
+        self.print('Downloading artwork' + (' with ' + covers_module_name) if covers_module_name else '')
         if covers_module_name:
             default_temp = download_to_temp(track_info.cover_url)
             test_cover_options = CoverOptions(file_type=ImageFileTypeEnum.jpg, resolution=get_image_resolution(default_temp), compression=CoverCompressionEnum.high)
@@ -266,14 +270,11 @@ class Downloader:
             else:
                 self.print('Third-party module could not find cover, using fallback')
                 os.rename(default_temp, cover_temp_location)
-        elif ModuleModes.covers in self.module_settings[self.service_name].module_supported_modes:
-            main_cover_info: CoverInfo = self.service.get_track_cover(track_id, jpg_cover_options)
-            download_file(main_cover_info.url, cover_temp_location)
-            if self.global_settings['covers']['save_external']:
-                ext_cover_info: CoverInfo = self.service.get_track_cover(track_id, ext_cover_options)
-                download_file(ext_cover_info.url, f'{track_location_name}.{ext_cover_info.file_type.name}')
         else:
             download_file(track_info.cover_url, cover_temp_location)
+            if self.global_settings['covers']['save_external'] and ModuleModes.covers in self.module_settings[self.service_name].module_supported_modes:
+                ext_cover_info: CoverInfo = self.service.get_track_cover(track_id, ext_cover_options)
+                download_file(ext_cover_info.url, f'{track_location_name}.{ext_cover_info.file_type.name}')
 
         # Get lyrics
         if self.global_settings['lyrics']['embed_lyrics'] or self.global_settings['lyrics']['save_synced_lyrics']:
@@ -289,7 +290,7 @@ class Downloader:
                     results = self.search_by_tags(lyrics_module_name, track_info.tags)
                     lyrics_track_id = results[0].result_id if len(results) else None
                 else:
-                    lyrics_track_id = self.track_id
+                    lyrics_track_id = track_id
                 
                 if lyrics_track_id:
                     lyrics_info: LyricsInfo = lyrics_module.get_track_lyrics(lyrics_track_id)
@@ -327,7 +328,7 @@ class Downloader:
                 results = self.search_by_tags(credits_module_name, track_info.tags)
                 credits_track_id = results[0].result_id if len(results) else None
             else:
-                credits_track_id = self.track_id
+                credits_track_id = track_id
             
             if credits_track_id:
                 credits_list = credits_module.get_track_credits(credits_track_id)
@@ -354,7 +355,6 @@ class Downloader:
             self.print('Warning: codec_conversions setting is invalid!')
         
         # Do conversions
-        save_original, new_track_location = True, None
         if codec in conversions:
             old_codec_data = codec_data[codec]
             new_codec = conversions[codec]
@@ -382,18 +382,17 @@ class Downloader:
                 conv_flags = conversion_flags[new_codec] if new_codec in conversion_flags else {}
                 new_track_location = f'{track_location_name}.{new_codec_data.container.name}'
                 
-                stream = ffmpeg.input(track_location, hide_banner=None, y=None)
+                stream: ffmpeg = ffmpeg.input(track_location, hide_banner=None, y=None)
                 stream.output(new_track_location, acodec=new_codec.name.lower(), **conv_flags, loglevel='error').run()
+                silentremove(track_location)
 
-                if not self.global_settings['advanced']['conversion_save_original']:
-                    silentremove(track_location)
-                    save_original = False
+                container = new_codec_data.container
+                track_location = new_track_location
 
         # Finally tag file
         self.print('Tagging file')
         try:
-            tag_file(track_location, cover_temp_location, track_info.tags, container) if save_original else None
-            tag_file(new_track_location, cover_temp_location, track_info.tags, new_codec_data.container) if new_track_location else None
+            tag_file(track_location, cover_temp_location, track_info.tags, container)
         except TagSavingFailure:
             self.print('Tagging failed, tags saved to text file')
         silentremove(cover_temp_location)

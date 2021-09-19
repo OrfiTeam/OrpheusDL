@@ -40,7 +40,8 @@ class Orpheus:
                 "playlist_format": "{playlist_name}",
                 "artist_format": "{artist_name}/{album_name}",
                 "track_filename_format": "{track_number}. {title}",
-                "single_full_path_format": "{title}"
+                "single_full_path_format": "{title}",
+                "enable_zfill": True
             },
             "codecs": {
                 "proprietary_codecs": False,
@@ -56,11 +57,12 @@ class Orpheus:
                 "save_synced_lyrics": True
             },
             "covers": {
-                "compression": "high",
+                "main_compression": "high",
                 "main_resolution": 1400,
                 "save_external": False,
-                "external_resolution": 3000,
-                "external_png": True
+                "external_format": 'png',
+                "external_compression": "low",
+                "external_resolution": 3000
             },
             "advanced": {
                 "advanced_login_system": False,
@@ -73,7 +75,6 @@ class Orpheus:
                         "compression_level": "5"
                     }
                 },
-                "conversion_save_original": False,
                 "cover_variance_threshold": 8,
                 "debug_mode": False,
                 "disable_subscription_checks": False,
@@ -86,16 +87,16 @@ class Orpheus:
         self.settings_location = 'config/settings.json'
         self.session_storage_location = 'config/loginstorage.bin'
 
-        os.makedirs('config') if not os.path.exists('config') else None
+        os.mkdir('config') if not os.path.exists('config') else None
 
-        self.settings = json.load(open(self.settings_location,)) if os.path.exists(self.settings_location) else {}
+        self.settings = json.loads(open(self.settings_location, 'r').read()) if os.path.exists(self.settings_location) else {}
 
         try:
             logging.basicConfig(level=logging.DEBUG) if self.settings['global']['advanced']['debug_mode'] else None
         except:
             pass
 
-        os.makedirs('extensions') if not os.path.exists('extensions') else None
+        os.mkdir('extensions') if not os.path.exists('extensions') else None
         for extension in os.listdir('extensions'):  # Loading extensions
             if os.path.isdir(f'extensions/{extension}') and os.path.exists(f'extensions/{extension}/interface.py'):
                 class_ = getattr(importlib.import_module(f'extensions.{extension}.interface'), 'OrpheusExtension', None)
@@ -106,7 +107,7 @@ class Orpheus:
                     raise Exception('Error loading extension: "{extension}"')
 
         # Module preparation (not loaded yet for performance purposes)
-        os.makedirs('modules') if not os.path.exists('modules') else None
+        os.mkdir('modules') if not os.path.exists('modules') else None
         module_list = [module.lower() for module in os.listdir('modules') if os.path.exists(f'modules/{module}/interface.py')]
         if not module_list or module_list == ['example']:
             print('No modules are installed, quitting')
@@ -181,9 +182,9 @@ class Orpheus:
                             proprietary_codecs = self.settings['global']['codecs']['proprietary_codecs'],
                         ),
                         default_cover_options = CoverOptions(
-                            file_type = ImageFileTypeEnum.png if self.settings['global']['covers']['external_png'] else ImageFileTypeEnum.jpg,
+                            file_type = ImageFileTypeEnum[self.settings['global']['covers']['external_format']],
                             resolution = self.settings['global']['covers']['main_resolution'],
-                            compression = self.settings['global']['covers']['compression']
+                            compression = self.settings['global']['covers']['main_compression']
                         )
                     )
                 )
@@ -342,7 +343,7 @@ class Orpheus:
 
 def orpheus_core_download(orpheus_session: Orpheus, media_to_download, third_party_modules, separate_download_module, output_path):
     downloader = Downloader(orpheus_session.settings['global'], orpheus_session.module_controls, output_path)
-    os.makedirs('temp') if not os.path.exists('temp') else None
+    os.mkdir('temp') if not os.path.exists('temp') else None
 
     for media in media_to_download:
         mainmodule = media.service_name
