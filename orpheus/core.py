@@ -36,7 +36,7 @@ class Orpheus:
                 "download_quality": "hifi"
             },
             "formatting": {
-                "album_format": "{album_name}",
+                "album_format": "{album_name}{quality}{explicit}",
                 "playlist_format": "{playlist_name}",
                 "artist_format": "{artist_name}/{album_name}",
                 "track_filename_format": "{track_number}. {title}",

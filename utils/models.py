@@ -224,6 +224,7 @@ class AlbumInfo:
     tracks: list
     album_year: Optional[str] = None
     explicit: Optional[bool] = None
+    quality: Optional[str] = None
     booklet_url: Optional[str] = None
     cover_url: Optional[str] = None
     cover_type: Optional[ImageFileTypeEnum] = ImageFileTypeEnum.jpg
