@@ -185,7 +185,7 @@ class Orpheus:
                         default_cover_options = CoverOptions(
                             file_type = ImageFileTypeEnum[self.settings['global']['covers']['external_format']],
                             resolution = self.settings['global']['covers']['main_resolution'],
-                            compression = self.settings['global']['covers']['main_compression']
+                            compression = CoverCompressionEnum[self.settings['global']['covers']['main_compression']]
                         )
                     )
                 )
