@@ -101,8 +101,10 @@ class Downloader:
             return
         number_of_tracks = len(album_info.tracks)
 
-        # Clean up album tags
+        # Clean up album tags and add special explicit and additional formats
         album_tags = {k: sanitise_name(v) for k, v in asdict(album_info).items()}
+        album_tags['quality'] = f' [{album_info.quality}]' if album_info.quality else ''
+        album_tags['explicit'] = ' [E]' if album_info.explicit is True else ''
 
         if artist_name:
             album_tags['artist_name'] = artist_name

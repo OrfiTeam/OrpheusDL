@@ -93,8 +93,10 @@ for instance {artist}/{album}.
 
 #### Format variables
 
-`track_format` and `album_format` variables are `{title}`, `{artist}`, `{album_artist}`, `{album}`, `{track_number}`,
-`{total_tracks}`, `{date}`, `{isrc}`.
+`track_format` variables are `{title}`, `{artist}`, `{album_artist}`, `{album}`, `{track_number}`,
+`{total_tracks}`, `{disc_number}`, `{total_discs}`, `{date}`, `{isrc}`, `{explicit}`.
+
+`album_format` variables are `{album_name}`, `{artist_name}`, `{artist_id}`, `{album_year}`, `{explicit}`, `{quality}`.
 
 <!-- Contact -->
 ## Contact
