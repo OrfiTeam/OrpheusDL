@@ -299,14 +299,7 @@ class Downloader:
             lyrics_info = LyricsInfo()
             if track_info.tags.lyrics:
                 self.print('Embedded tags already provided by main module, however this is not recommended behaviour')
-            elif ModuleModes.lyrics in self.module_settings[self.service_name].module_supported_modes:
-                lyrics_info: LyricsInfo = self.service.get_track_lyrics(track_id)
-
-                # if lyrics_info.embedded or lyrics_info.synced:
-                #     self.print('Lyrics retrieved')
-                # else:
-                #     self.print('No lyrics available')
-            elif self.third_party_modules[ModuleModes.lyrics]:
+            elif self.third_party_modules[ModuleModes.lyrics] and self.third_party_modules[ModuleModes.lyrics] != self.service_name:
                 lyrics_module_name = self.third_party_modules[ModuleModes.lyrics]
                 self.print('Retrieving lyrics with ' + lyrics_module_name)
                 lyrics_module = self.loaded_modules[lyrics_module_name]
@@ -325,6 +318,13 @@ class Downloader:
                     #     self.print('Lyrics module could not find any lyrics.')
                 else:
                     self.print('Lyrics module could not find any lyrics.')
+            elif ModuleModes.lyrics in self.module_settings[self.service_name].module_supported_modes:
+                lyrics_info: LyricsInfo = self.service.get_track_lyrics(track_id)
+
+                # if lyrics_info.embedded or lyrics_info.synced:
+                #     self.print('Lyrics retrieved')
+                # else:
+                #     self.print('No lyrics available')
 
             if lyrics_info.embedded and self.global_settings['lyrics']['embed_lyrics']:
                 track_info.tags.lyrics = lyrics_info.embedded
@@ -337,15 +337,7 @@ class Downloader:
         # Get credits
         if track_info.tags.credits:
             self.print('Credits already provided by main module, however this is not recommended behaviour')
-        elif ModuleModes.credits in self.module_settings[self.service_name].module_supported_modes:
-            self.print('Retrieving credits')
-            credits_list = self.service.get_track_credits(track_id)
-            if credits_list:
-                # self.print('Credits retrieved')
-                track_info.tags.credits = credits_list
-            # else:
-            #     self.print('No credits available')
-        elif self.third_party_modules[ModuleModes.credits]:
+        elif self.third_party_modules[ModuleModes.credits] and self.third_party_modules[ModuleModes.credits] != self.service_name:
             credits_module_name = self.third_party_modules[ModuleModes.credits]
             self.print('Retrieving credits with ' + credits_module_name)
             credits_module = self.loaded_modules[credits_module_name]
@@ -365,6 +357,14 @@ class Downloader:
                 #     self.print('Credits module could not find any credits.')
             # else:
             #     self.print('Credits module could not find any credits.')
+        elif ModuleModes.credits in self.module_settings[self.service_name].module_supported_modes:
+            self.print('Retrieving credits')
+            credits_list = self.service.get_track_credits(track_id)
+            if credits_list:
+                # self.print('Credits retrieved')
+                track_info.tags.credits = credits_list
+            # else:
+            #     self.print('No credits available')
 
         try:
             conversions = {CodecEnum[k.upper()]: CodecEnum[v.upper()] for k, v in self.global_settings['advanced']['codec_conversions'].items()}
