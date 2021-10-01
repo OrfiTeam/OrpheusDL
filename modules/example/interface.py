@@ -36,12 +36,12 @@ class ModuleInterface:
 
         self.track_cache = {}
 
-    def login(self, email, password): # Called automatically by Orpheus when standard_login is enabled, otherwise optional
+    def login(self, email: str, password: str): # Called automatically by Orpheus when standard_login is flagged, otherwise optional
         token = self.session.login(email, password)
         self.session.auth_token = token
         self.module_controller.temporary_settings_controller.set('token', token)
 
-    def get_track_info(self, track_id: str) -> TrackInfo: # Mandatory
+    def get_track_info(self, track_id: str, quality_tier: QualityEnum, codec_options: CodecOptions) -> TrackInfo: # Mandatory
         quality_parse = {
             QualityEnum.LOW: 1,
             QualityEnum.MEDIUM: 2,
@@ -49,40 +49,41 @@ class ModuleInterface:
             QualityEnum.LOSSLESS: 4,
             QualityEnum.HIFI: 5
         }
-        quality_tier = quality_parse[self.module_controller.orpheus_options.quality_tier]
+        quality_tier = quality_parse[quality_tier]
         track_data = self.track_cache[track_id] if track_id in self.track_cache else self.session.get_track(track_id, quality_tier)
 
         tags = Tags(
-            title = '',
-            album = '',
-            artist = '',
-            date = 2021,
-            explicit = False, # optional
+            title = '', # to be removed
+            album = '', # to be removed
+            artist = '', # to be removed
+            date = 2021, # to be removed
+            explicit = False, # optional, to be removed
             album_artist = '', # optional
-            track_number = '', # optional
-            total_tracks = '', # optional
+            track_number = 1, # optional
+            total_tracks = 1, # optional
             copyright = '', # optional
             isrc = '', # optional
-            upc = '', # optional
-            disc_number = '', # optional
-            total_discs = '', # optional
+            upc = 111111111111, # optional
+            disc_number = 1, # optional, None/0 if no discs
+            total_discs = 1, # optional, None/0 if no discs
             replay_gain = 0.0, # optional
             replay_peak = 0.0, # optional
             genre = [], # optional
-            lyrics = [], # optional
-            credits = [], # optional
+            lyrics = [], # optional, to be removed
+            credits = [], # optional, to be removed
         )
 
         return TrackInfo(
-            track_name = '',
+            name = '',
             album_id = '',
             album_name = '',
-            artist_name = '',
+            artists = [''],
             artist_id = '',
             download_type = DownloadEnum.URL,
             tags = tags,
             codec = CodecEnum.FLAC,
             cover_url = '', # Make sure to check module_controller.orpheus_options.default_cover_options
+            release_year = 2021,
             animated_cover_url = '', # Optional
             bit_depth = 16, # Optional
             sample_rate = 44.1, # Optional
@@ -92,15 +93,16 @@ class ModuleInterface:
             error = '' # Only use if there is an error
         )
 
-    def get_album_info(self, album_id) -> Optional[AlbumInfo]: # Mandatory if ModuleModes.download
+    def get_album_info(self, album_id: str, get_only_albums: bool) -> Optional[AlbumInfo]: # Mandatory if ModuleModes.download
+        # get_only_albums means no singles and stuff I think, not sure what Dniel97 meant by that
         album_data = self.session.get_album(album_id) # Make sure to cache tracks into track_cache if possible
 
         return AlbumInfo(
-            album_name = '',
-            artist_name = '',
+            name = '',
+            artist = '',
             artist_id = '',
             tracks = [],
-            album_year = '', # optional
+            release_year = '',
             explicit = False, # optional
             booklet_url = '', # optional
             cover_url = '', # optional
@@ -108,41 +110,42 @@ class ModuleInterface:
             animated_cover_url = '' # optional
         )
 
-    def get_playlist_info(self, playlist_id) -> PlaylistInfo:  # Mandatory if either ModuleModes.download or ModuleModes.playlist
+    def get_playlist_info(self, playlist_id: str) -> PlaylistInfo:  # Mandatory if either ModuleModes.download or ModuleModes.playlist
         playlist_data = self.session.get_playlist(playlist_id) # Make sure to cache tracks into track_cache if possible
 
         return PlaylistInfo(
-            playlist_name = '',
-            playlist_creator_name = '',
+            name = '',
+            creator = '',
             tracks = [],
-            playlist_year = '', # optional
+            release_year = '',
             explicit = False, # optional
-            playlist_creator_id = '', # optional
+            creator_id = '', # optional
             cover_url = '', # optional
             cover_type = ImageFileTypeEnum.jpg, # optional
             animated_cover_url = '' # optional
         )
 
-    def get_artist_info(self, artist_id) -> ArtistInfo: # Mandatory if ModuleModes.download
+    def get_artist_info(self, artist_id: str, get_credited_albums: bool) -> ArtistInfo: # Mandatory if ModuleModes.download
+        # get_credited_albums means stuff like remix compilations the artist was part of
         artist_data = self.session.get_artist(artist_id)
 
         return ArtistInfo(
-            artist_name = '',
+            name = '',
             albums = []
         )
 
-    def get_track_credits(self, track_id): # Mandatory if ModuleModes.credits
+    def get_track_credits(self, track_id: str): # Mandatory if ModuleModes.credits
         track_data = self.track_cache[track_id] if track_id in self.track_cache else self.session.get_track(track_id, quality_tier=1)
         track_contributors = track_data['credits'] 
         credits_dict = {}
         return [CreditsInfo(k, v) for k, v in credits_dict.items()]
     
-    def get_track_cover(self, track_id, cover_options: CoverOptions) -> CoverInfo: # Mandatory if ModuleModes.covers
+    def get_track_cover(self, track_id: str, cover_options: CoverOptions) -> CoverInfo: # Mandatory if ModuleModes.covers
         track_data = self.track_cache[track_id] if track_id in self.track_cache else self.session.get_track(track_id, quality_tier=1)
         track_cover = track_data['cover_url'] 
         return CoverInfo(url='', file_type=ImageFileTypeEnum.jpg)
     
-    def get_track_lyrics(self, track_id) -> LyricsInfo: # Mandatory if ModuleModes.lyrics
+    def get_track_lyrics(self, track_id: str) -> LyricsInfo: # Mandatory if ModuleModes.lyrics
         track_data = self.track_cache[track_id] if track_id in self.track_cache else self.session.get_track(track_id, quality_tier=1)
         track_cover = track_data['lyrics'] 
         return LyricsInfo(embedded='', synced='') # Both optional if not found

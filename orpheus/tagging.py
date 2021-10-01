@@ -19,6 +19,8 @@ MP4Tags._padding = 0
 
 
 def tag_file(file_path: str, image_path: str, tags: Tags, container: ContainerEnum):
+    # TODO: eliminate tags already in track info
+    
     if container == ContainerEnum.flac:
         tagger = FLAC(file_path)
     elif container == ContainerEnum.opus:

@@ -32,13 +32,14 @@ class Orpheus:
         self.default_global_settings = {
             "general": {
                 "album_search_return_only_albums": False,
+                "artist_download_return_credited_albums": True,
                 "download_path": "./downloads/",
                 "download_quality": "hifi"
             },
             "formatting": {
-                "album_format": "{album_name}{quality}{explicit}",
-                "playlist_format": "{playlist_name}",
-                "artist_format": "{artist_name}/{album_name}",
+                "album_format": "{name} {explicit}",
+                "playlist_format": "{name}",
+                "artist_format": "{name}",
                 "track_filename_format": "{track_number}. {title}",
                 "single_full_path_format": "{title}",
                 "enable_zfill": True
@@ -76,6 +77,7 @@ class Orpheus:
                         "compression_level": "5"
                     }
                 },
+                "conversion_keep_original": False,
                 "cover_variance_threshold": 8,
                 "debug_mode": False,
                 "disable_subscription_checks": False,
@@ -176,12 +178,7 @@ class Orpheus:
                         debug_mode = self.settings['global']['advanced']['debug_mode'],
                         quality_tier = QualityEnum[self.settings['global']['general']['download_quality'].upper()],
                         disable_subscription_check = self.settings['global']['advanced']['disable_subscription_checks'],
-                        album_search_return_only_albums = self.settings['global']['general']['album_search_return_only_albums'],
                         album_cache_optimisations = self.settings['global']['advanced']['album_cache_optimisations'],
-                        codec_options = CodecOptions(
-                            spatial_codecs = self.settings['global']['codecs']['spatial_codecs'],
-                            proprietary_codecs = self.settings['global']['codecs']['proprietary_codecs'],
-                        ),
                         default_cover_options = CoverOptions(
                             file_type = ImageFileTypeEnum[self.settings['global']['covers']['external_format']],
                             resolution = self.settings['global']['covers']['main_resolution'],

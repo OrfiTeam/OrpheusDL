@@ -164,9 +164,7 @@ class OrpheusOptions:
     debug_mode: bool
     disable_subscription_check: bool
     quality_tier: QualityEnum # Here because of subscription checking
-    album_search_return_only_albums: bool
     album_cache_optimisations: bool
-    codec_options: CodecOptions
     default_cover_options: CoverOptions
 
 @dataclass
@@ -176,29 +174,30 @@ class ModuleController:
     temporary_settings_controller: TemporarySettingsController
     orpheus_options: OrpheusOptions
     get_current_timestamp: FunctionType
-    module_error: ClassMethodDescriptorType
+    module_error: ClassMethodDescriptorType # DEPRECATED
 
-# TODO: add all artists here, not just the main one
+# TODO: remove tags already in track info
 @dataclass
 class Tags:
-    title: str
-    album: str
-    artist: str
-    date: int
-    explicit: Optional[bool] = None
+    title: str # remove
+    album: str # remove
+    artist: str # remove
+    date: int # remove
+    explicit: Optional[bool] = None # remove
     album_artist: Optional[str] = None
-    track_number: Optional[str] = None
-    total_tracks: Optional[str] = None
+    composer: Optional[str] = None
+    track_number: Optional[int] = None
+    total_tracks: Optional[int] = None
     copyright: Optional[str] = None
     isrc: Optional[str] = None
-    upc: Optional[str] = None
-    disc_number: Optional[str] = None
-    total_discs: Optional[str] = None
+    upc: Optional[int] = None
+    disc_number: Optional[int] = None
+    total_discs: Optional[int] = None
     replay_gain: Optional[float] = None
     replay_peak: Optional[float] = None
-    genre: Optional[list] = None
-    lyrics: Optional[list] = None
-    credits: Optional[list] = None
+    genres: Optional[list] = None
+    lyrics: Optional[list] = None # remove
+    credits: Optional[list] = None # remove
 
 @dataclass
 class CoverInfo:
@@ -218,11 +217,11 @@ class CreditsInfo:
 
 @dataclass
 class AlbumInfo:
-    album_name: str
-    artist_name: str
+    name: str
+    artist: str
     artist_id: str
     tracks: list
-    album_year: Optional[str] = None
+    release_year: int
     explicit: Optional[bool] = None
     quality: Optional[str] = None
     booklet_url: Optional[str] = None
@@ -232,32 +231,34 @@ class AlbumInfo:
 
 @dataclass
 class ArtistInfo:
-    artist_name: str
+    name: str
     albums: list
+    tracks: list
 
 @dataclass
 class PlaylistInfo:
-    playlist_name: str
-    playlist_creator_name: str
+    name: str
+    creator: str
     tracks: list
-    playlist_year: Optional[str] = None
+    release_year: int
     explicit: Optional[bool] = None
-    playlist_creator_id: Optional[str] = None
+    creator_id: Optional[str] = None
     cover_url: Optional[str] = None
     cover_type: Optional[ImageFileTypeEnum] = ImageFileTypeEnum.jpg
     animated_cover_url: Optional[str] = None
 
 @dataclass
 class TrackInfo:
-    track_name: str
+    name: str
     album_id: str
     album_name: str
-    artist_name: str
+    artists: list
     artist_id: str
     download_type: DownloadEnum
     tags: Tags
     codec: CodecEnum
     cover_url: str
+    release_year: int
     animated_cover_url: Optional[str] = None
     bit_depth: Optional[int] = 16
     sample_rate: Optional[float] = 44.1

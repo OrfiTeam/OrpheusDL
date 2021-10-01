@@ -35,7 +35,8 @@ def main():
 
     orpheus = Orpheus(args.private)
     if not args.arguments:
-        print('Warning: no arguments given! Use python3 orpheus.py --help for information on usage.')
+        parser.print_help()
+        exit()
 
     orpheus_mode = args.arguments[0].lower()
     if orpheus_mode == 'settings': # These should call functions in a separate py file, that does not yet exist
