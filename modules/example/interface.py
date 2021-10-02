@@ -12,7 +12,7 @@ module_information = ModuleInformation( # Only service_name and module_supported
         # jwt_system_enable: handles bearer and refresh tokens automatically, though currently untested
         # custom_url_parsing: instead of the simple system of taking the url_constants dict as input, 
         #     and the final part of the URL as the ID, let the module handle it instead
-        # private: override any public modules, only enabled with the -p/--private argument
+        # private: override any public modules, only enabled with the -p/--private argument, currently broken
     global_settings = {},
     session_settings = {},
     temporary_settings = ['access_token'],
@@ -52,25 +52,18 @@ class ModuleInterface:
         quality_tier = quality_parse[quality_tier]
         track_data = self.track_cache[track_id] if track_id in self.track_cache else self.session.get_track(track_id, quality_tier)
 
-        tags = Tags(
-            title = '', # to be removed
-            album = '', # to be removed
-            artist = '', # to be removed
-            date = 2021, # to be removed
-            explicit = False, # optional, to be removed
-            album_artist = '', # optional
-            track_number = 1, # optional
-            total_tracks = 1, # optional
-            copyright = '', # optional
-            isrc = '', # optional
-            upc = 111111111111, # optional
-            disc_number = 1, # optional, None/0 if no discs
-            total_discs = 1, # optional, None/0 if no discs
-            replay_gain = 0.0, # optional
-            replay_peak = 0.0, # optional
-            genre = [], # optional
-            lyrics = [], # optional, to be removed
-            credits = [], # optional, to be removed
+        tags = Tags( # every single one of these is optional
+            album_artist = '',
+            track_number = 1,
+            total_tracks = 1,
+            copyright = '',
+            isrc = '',
+            upc = 111111111111,
+            disc_number = 1, # None/0/1 if no discs
+            total_discs = 1, # None/0/1 if no discs
+            replay_gain = 0.0,
+            replay_peak = 0.0,
+            genres = []
         )
 
         return TrackInfo(
@@ -78,19 +71,20 @@ class ModuleInterface:
             album_id = '',
             album_name = '',
             artists = [''],
-            artist_id = '',
             download_type = DownloadEnum.URL,
             tags = tags,
             codec = CodecEnum.FLAC,
-            cover_url = '', # Make sure to check module_controller.orpheus_options.default_cover_options
+            cover_url = '', # make sure to check module_controller.orpheus_options.default_cover_options
             release_year = 2021,
-            animated_cover_url = '', # Optional
-            bit_depth = 16, # Optional
-            sample_rate = 44.1, # Optional
-            bitrate = 1411, # Optional
-            file_url = '', # Optional only if download_type isn't DownloadEnum.URL
-            file_url_headers = {}, # Optional
-            error = '' # Only use if there is an error
+            explicit = False,
+            artist_id = '', # optional
+            animated_cover_url = '', # optional
+            bit_depth = 16, # optional
+            sample_rate = 44.1, # optional
+            bitrate = 1411, # optional
+            file_url = '', # optional only if download_type isn't DownloadEnum.URL
+            file_url_headers = {}, # optional
+            error = '' # only use if there is an error
         )
 
     def get_album_info(self, album_id: str, get_only_albums: bool) -> Optional[AlbumInfo]: # Mandatory if ModuleModes.download
@@ -100,13 +94,14 @@ class ModuleInterface:
         return AlbumInfo(
             name = '',
             artist = '',
-            artist_id = '',
             tracks = [],
             release_year = '',
-            explicit = False, # optional
+            explicit = False,
+            artist_id = '', # optional
             booklet_url = '', # optional
             cover_url = '', # optional
             cover_type = ImageFileTypeEnum.jpg, # optional
+            all_track_cover_jpg_url = '', # technically optional, but HIGHLY recommended
             animated_cover_url = '' # optional
         )
 
@@ -118,7 +113,7 @@ class ModuleInterface:
             creator = '',
             tracks = [],
             release_year = '',
-            explicit = False, # optional
+            explicit = False,
             creator_id = '', # optional
             cover_url = '', # optional
             cover_type = ImageFileTypeEnum.jpg, # optional

@@ -179,11 +179,6 @@ class ModuleController:
 # TODO: remove tags already in track info
 @dataclass
 class Tags:
-    title: str # remove
-    album: str # remove
-    artist: str # remove
-    date: int # remove
-    explicit: Optional[bool] = None # remove
     album_artist: Optional[str] = None
     composer: Optional[str] = None
     track_number: Optional[int] = None
@@ -196,8 +191,6 @@ class Tags:
     replay_gain: Optional[float] = None
     replay_peak: Optional[float] = None
     genres: Optional[list] = None
-    lyrics: Optional[list] = None # remove
-    credits: Optional[list] = None # remove
 
 @dataclass
 class CoverInfo:
@@ -219,14 +212,15 @@ class CreditsInfo:
 class AlbumInfo:
     name: str
     artist: str
-    artist_id: str
     tracks: list
     release_year: int
-    explicit: Optional[bool] = None
+    explicit: bool
+    artist_id: Optional[str] = None
     quality: Optional[str] = None
     booklet_url: Optional[str] = None
     cover_url: Optional[str] = None
     cover_type: Optional[ImageFileTypeEnum] = ImageFileTypeEnum.jpg
+    all_track_cover_jpg_url: Optional[str] = None
     animated_cover_url: Optional[str] = None
 
 @dataclass
@@ -241,7 +235,7 @@ class PlaylistInfo:
     creator: str
     tracks: list
     release_year: int
-    explicit: Optional[bool] = None
+    explicit: bool
     creator_id: Optional[str] = None
     cover_url: Optional[str] = None
     cover_type: Optional[ImageFileTypeEnum] = ImageFileTypeEnum.jpg
@@ -253,12 +247,13 @@ class TrackInfo:
     album_id: str
     album_name: str
     artists: list
-    artist_id: str
     download_type: DownloadEnum
     tags: Tags
     codec: CodecEnum
     cover_url: str
     release_year: int
+    explicit: bool
+    artist_id: Optional[str] = None
     animated_cover_url: Optional[str] = None
     bit_depth: Optional[int] = 16
     sample_rate: Optional[float] = 44.1

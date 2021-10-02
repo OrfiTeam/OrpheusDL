@@ -11,14 +11,14 @@ from mutagen.mp4 import MP4Tags
 from mutagen.id3 import PictureType
 from PIL import Image
 
-from utils.models import Tags, ContainerEnum
+from utils.models import ContainerEnum, TrackInfo
 from utils.exceptions import *
 
 # Needed for Windows tagging support
 MP4Tags._padding = 0
 
 
-def tag_file(file_path: str, image_path: str, tags: Tags, container: ContainerEnum):
+def tag_file(file_path: str, image_path: str, track_info: TrackInfo, credits_list: list, embedded_lyrics: str, container: ContainerEnum):
     # TODO: eliminate tags already in track info
     
     if container == ContainerEnum.flac:
@@ -33,79 +33,78 @@ def tag_file(file_path: str, image_path: str, tags: Tags, container: ContainerEn
         tagger = EasyMP4(file_path)
         # Register ISRC, lyrics, cover and explicit tags
         tagger.RegisterTextKey('isrc', '----:com.apple.itunes:ISRC')
-        tagger.RegisterTextKey('explicit', 'rtng') if tags.explicit is not None else None
+        tagger.RegisterTextKey('explicit', 'rtng') if track_info.explicit is not None else None
         tagger.RegisterTextKey('covr', 'covr')
-        tagger.RegisterTextKey('lyrics', '\xa9lyr') if tags.lyrics else None
+        tagger.RegisterTextKey('lyrics', '\xa9lyr') if embedded_lyrics else None
     else:
         raise Exception('Unknown container for tagging')
 
-    tagger['title'] = tags.title
-    if tags.album:
-        tagger['album'] = tags.album
-    if tags.album_artist:
-        tagger['albumartist'] = tags.album_artist
-    if tags.artist:
-        tagger['artist'] = tags.artist
+    tagger['title'] = track_info.name
+    if track_info.album_name:
+        tagger['album'] = track_info.album_name
+    if track_info.tags.album_artist:
+        tagger['albumartist'] = track_info.tags.album_artist
+    tagger['artist'] = track_info.artists[0] # TODO: multiple artists
 
     if container == ContainerEnum.m4a or container == ContainerEnum.mp3:
-        if tags.track_number and tags.total_tracks:
-            tagger['tracknumber'] = str(tags.track_number) + '/' + str(tags.total_tracks)
-        elif tags.track_number:
-            tagger['tracknumber'] = str(tags.track_number)
-        if tags.disc_number and tags.total_discs:
-            tagger['discnumber'] = str(tags.disc_number) + '/' + str(tags.total_discs)
-        elif tags.disc_number:
-            tagger['discnumber'] = str(tags.disc_number)
+        if track_info.tags.track_number and track_info.tags.total_tracks:
+            tagger['tracknumber'] = str(track_info.tags.track_number) + '/' + str(track_info.tags.total_tracks)
+        elif track_info.tags.track_number:
+            tagger['tracknumber'] = str(track_info.tags.track_number)
+        if track_info.tags.disc_number and track_info.tags.total_discs:
+            tagger['discnumber'] = str(track_info.tags.disc_number) + '/' + str(track_info.tags.total_discs)
+        elif track_info.tags.disc_number:
+            tagger['discnumber'] = str(track_info.tags.disc_number)
     else:
-        if tags.track_number:
-            tagger['tracknumber'] = str(tags.track_number)
-        if tags.disc_number:
-            tagger['discnumber'] = str(tags.disc_number)
-        if tags.total_tracks:
-            tagger['totaltracks'] = str(tags.total_tracks)
-        if tags.total_discs:
-            tagger['totaldiscs'] = str(tags.total_discs)
+        if track_info.tags.track_number:
+            tagger['tracknumber'] = str(track_info.tags.track_number)
+        if track_info.tags.disc_number:
+            tagger['discnumber'] = str(track_info.tags.disc_number)
+        if track_info.tags.total_tracks:
+            tagger['totaltracks'] = str(track_info.tags.total_tracks)
+        if track_info.tags.total_discs:
+            tagger['totaldiscs'] = str(track_info.tags.total_discs)
 
-    tagger['date'] = str(tags.date)
+    tagger['date'] = str(track_info.release_year)
 
-    if tags.copyright:
-        tagger['copyright'] = tags.copyright
+    if track_info.tags.copyright:
+        tagger['copyright'] = track_info.tags.copyright
 
-    if tags.explicit is not None:
+    if track_info.explicit is not None:
         if container == ContainerEnum.m4a:
-            tagger['explicit'] = b'\x01' if tags.explicit else b'\x02'
+            tagger['explicit'] = b'\x01' if track_info.explicit else b'\x02'
         elif container != ContainerEnum.mp3:
-            tagger['Rating'] = 'Explicit' if tags.explicit else 'Clean'
+            tagger['Rating'] = 'Explicit' if track_info.explicit else 'Clean'
 
-    if tags.genre:
-        tagger['genre'] = tags.genre
+    if track_info.tags.genres:
+        tagger['genre'] = track_info.tags.genres[0] # TODO: all of them
 
-    if tags.isrc:
+    if track_info.tags.isrc:
         if container == ContainerEnum.m4a:
-            tagger['isrc'] = tags.isrc.encode()
+            tagger['isrc'] = track_info.tags.isrc.encode()
         else:
-            tagger['isrc'] = tags.isrc
+            tagger['isrc'] = track_info.tags.isrc
 
     # Need to change to merge dupicate credits automatically, or switch to plain dicts instead of list[dataclass] which is currently pointless
-    if tags.credits:
+    if credits_list:
         if container == ContainerEnum.m4a:
-            for credit in tags.credits:
+            for credit in credits_list:
                 # Create a new freeform atom and set the contributors in bytes
                 tagger.RegisterTextKey(credit.type, '----:com.apple.itunes:' + credit.type)
                 tagger[credit.type] = [con.encode() for con in credit.names]
         else:
-            for credit in tags.credits:
+            for credit in credits_list:
                 try:
                     tagger.tags[credit.type] = credit.names
                 except:
                     pass
 
-    if tags.lyrics:
-       tagger['lyrics'] = tags.lyrics
+    if embedded_lyrics:
+       tagger['lyrics'] = embedded_lyrics
 
-    if tags.replay_gain and tags.replay_peak and container != ContainerEnum.m4a:
-        tagger['REPLAYGAIN_TRACK_GAIN'] = str(tags.replay_gain)
-        tagger['REPLAYGAIN_TRACK_PEAK'] = str(tags.replay_peak)
+    if track_info.tags.replay_gain and track_info.tags.replay_peak and container != ContainerEnum.m4a:
+        tagger['REPLAYGAIN_TRACK_GAIN'] = str(track_info.tags.replay_gain)
+        tagger['REPLAYGAIN_TRACK_PEAK'] = str(track_info.tags.replay_peak)
 
     with open(image_path, 'rb') as c:
         data = c.read()
@@ -145,8 +144,8 @@ def tag_file(file_path: str, image_path: str, tags: Tags, container: ContainerEn
         tagger.save(file_path)
     except:
         logging.debug('Tagging failed.')
-        tag_text = '\n'.join((f'{k}: {v}' for k, v in asdict(tags).items() if v and k != 'credits' and k != 'lyrics'))
-        tag_text += '\n\ncredits:\n    ' + '\n    '.join(f'{credit.type}: {", ".join(credit.names)}' for credit in tags.credits if credit.names) if tags.credits else ''
-        tag_text += '\n\nlyrics:\n    ' + '\n    '.join(tags.lyrics.split('\n')) if tags.lyrics else ''
+        tag_text = '\n'.join((f'{k}: {v}' for k, v in asdict(track_info.tags).items() if v and k != 'credits' and k != 'lyrics'))
+        tag_text += '\n\ncredits:\n    ' + '\n    '.join(f'{credit.type}: {", ".join(credit.names)}' for credit in credits_list if credit.names) if credits_list else ''
+        tag_text += '\n\nlyrics:\n    ' + '\n    '.join(embedded_lyrics.split('\n')) if embedded_lyrics else ''
         open(file_path.rsplit('.', 1)[0] + '_tags.txt', 'w').write(tag_text)
         raise TagSavingFailure

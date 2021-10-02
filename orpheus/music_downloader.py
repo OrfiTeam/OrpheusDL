@@ -25,8 +25,8 @@ class Downloader:
         self.print = self.oprinter.oprint
         self.set_indent_number = self.oprinter.set_indent_number
 
-    def search_by_tags(self, module_name, tags):
-        return self.loaded_modules[module_name].search(DownloadTypeEnum.track, '{title} {artist}'.format(**asdict(tags)), tags=tags)
+    def search_by_tags(self, module_name, track_info: TrackInfo):
+        return self.loaded_modules[module_name].search(DownloadTypeEnum.track, '{title} {artist}'.format(**{*asdict(track_info.tags), *asdict(track_info)}), tags=track_info.tags)
 
     def download_playlist(self, playlist_id, custom_module=None):
         self.set_indent_number(1)
@@ -39,17 +39,19 @@ class Downloader:
         number_of_tracks = len(playlist_info.tracks)
         self.print(f'Number of tracks: {number_of_tracks!s}')
         self.print(f'Service: {self.module_settings[self.service_name].service_name}')
-        path = self.path + self.global_settings['formatting']['playlist_format'].format(**asdict(playlist_info)) + '/'
-        os.makedirs(path) if not os.path.exists(path) else None
         
-        cover_path = f'{path}Cover.{playlist_info.cover_type}'
+        playlist_tags = {k: sanitise_name(v) for k, v in asdict(playlist_info).items()}
+        playlist_tags['explicit'] = '[E]' if playlist_info.explicit else ''
+        playlist_path = self.path + self.global_settings['formatting']['playlist_format'].format(**playlist_tags) + '/'
+        os.makedirs(playlist_path) if not os.path.exists(playlist_path) else None
+        
         if playlist_info.cover_url:
             self.print('Downloading playlist cover')
-            download_file(playlist_info.cover_url, cover_path)
+            download_file(playlist_info.cover_url, f'{playlist_path}Cover.{playlist_info.cover_type.name}')
         
         if playlist_info.animated_cover_url and self.global_settings['covers']['save_animated_cover']:
             self.print('Downloading animated playlist cover')
-            download_file(playlist_info.animated_cover_url, path + 'Cover.mp4', enable_progress_bar=True)
+            download_file(playlist_info.animated_cover_url, playlist_path + 'Cover.mp4', enable_progress_bar=True)
 
         tracks_errored = set()
         if custom_module:
@@ -72,18 +74,18 @@ class Downloader:
                 
                 self.service = self.loaded_modules[custom_module]
                 self.service_name = custom_module
-                results = self.search_by_tags(custom_module, track_info.tags)
+                results = self.search_by_tags(custom_module, track_info)
                 track_id = results[0].result_id if len(results) else None
                 
                 if track_id:
-                    self.download_track(track_id, album_location=path, track_index=index, number_of_tracks=number_of_tracks, indent_level=2)
+                    self.download_track(track_id, album_location=playlist_path, track_index=index, number_of_tracks=number_of_tracks, indent_level=2)
                 else:
                     if ModuleModes.download in self.module_settings[original_service].module_supported_modes:
                         self.service = self.loaded_modules[original_service]
                         self.service_name = original_service
                         self.print(f'Track {track_info.name} not found, using the original service as a fallback', drop_level=1)
                         tracks_errored.add(f'{track_info.name} - {track_info.artists[0]}')
-                        self.download_track(track_id, album_location=path, track_index=index, number_of_tracks=number_of_tracks, indent_level=2)
+                        self.download_track(track_id, album_location=playlist_path, track_index=index, number_of_tracks=number_of_tracks, indent_level=2)
                     else:
                         self.print(f'Track {track_info.name} not found, skipping')
         else:
@@ -91,7 +93,7 @@ class Downloader:
                 self.set_indent_number(2)
                 print()
                 self.print(f'Track {index}/{number_of_tracks}', drop_level=1)
-                self.download_track(track_id, album_location=path, track_index=index, number_of_tracks=number_of_tracks, indent_level=2)
+                self.download_track(track_id, album_location=playlist_path, track_index=index, number_of_tracks=number_of_tracks, indent_level=2)
 
         self.set_indent_number(1)
         self.print(f'=== Playlist {playlist_info.name} downloaded ===', drop_level=1)
@@ -111,18 +113,19 @@ class Downloader:
             # Clean up album tags and add special explicit and additional formats
             album_tags = {k: sanitise_name(v) for k, v in asdict(album_info).items()}
             album_tags['quality'] = f' [{album_info.quality}]' if album_info.quality else ''
-            album_tags['explicit'] = ' [E]' if album_info.explicit is True else ''
+            album_tags['explicit'] = '[E]' if album_info.explicit else ''
             album_path = path + self.global_settings['formatting']['album_format'].format(**album_tags) + '/'
             os.makedirs(album_path) if not os.path.exists(album_path) else None
         
             if album_info.booklet_url:
                 self.print('Downloading booklet')
                 download_file(album_info.booklet_url, album_path + 'Booklet.pdf') if album_info.booklet_url and not os.path.exists(album_path + 'Booklet.pdf') else None
-                cover_path = f'{album_path}Cover.{album_info.cover_type.name}'
             
+            cover_temp_location = download_to_temp(album_info.all_track_cover_jpg_url) if album_info.all_track_cover_jpg_url else ''
+
             if album_info.cover_url:
                 self.print('Downloading album cover')
-                download_file(album_info.cover_url, cover_path)
+                download_file(album_info.cover_url, f'{album_path}Cover.{album_info.cover_type.name}')
 
             if album_info.animated_cover_url and self.global_settings['covers']['save_animated_cover']:
                 self.print('Downloading animated album cover')
@@ -143,7 +146,7 @@ class Downloader:
                 self.set_indent_number(indent_level + 1)
                 print()
                 self.print(f'Track {index}/{number_of_tracks}', drop_level=1)
-                self.download_track(track_id, album_location=album_path, track_index=index, number_of_tracks=number_of_tracks, main_artist=artist_name, download_cover=bool(album_info.cover_url), indent_level=indent_level+1)
+                self.download_track(track_id, album_location=album_path, track_index=index, number_of_tracks=number_of_tracks, main_artist=artist_name, cover_temp_location=cover_temp_location, indent_level=indent_level+1)
 
             self.set_indent_number(indent_level)
             self.print(f'=== Album {album_info.name} downloaded ===', drop_level=1)
@@ -176,7 +179,7 @@ class Downloader:
         self.set_indent_number(1)
         self.print(f'=== Artist {artist_name} downloaded ===', drop_level=1)
 
-    def download_track(self, track_id, album_location=None, main_artist='', track_index=0, number_of_tracks=0, download_cover=True, indent_level=1):
+    def download_track(self, track_id, album_location=None, main_artist='', track_index=0, number_of_tracks=0, cover_temp_location='', indent_level=1):
         quality_tier = QualityEnum[self.global_settings['general']['download_quality'].upper()]
         codec_options = CodecOptions(
             spatial_codecs = self.global_settings['codecs']['spatial_codecs'],
@@ -196,7 +199,8 @@ class Downloader:
 
         # Separate copy of tags for formatting purposes
         zfill_enabled, zfill_list = self.global_settings['formatting']['enable_zfill'], ['track_number', 'total_tracks', 'disc_number', 'total_discs']
-        track_tags = {k: (zfill_lambda(v) if zfill_enabled and k in zfill_list else sanitise_name(v)) for k, v in asdict(track_info.tags).items()}
+        track_tags = {k: (zfill_lambda(v) if zfill_enabled and k in zfill_list else sanitise_name(v)) for k, v in {*asdict(track_info.tags), *asdict(track_info)}.items()}
+        track_tags['explicit'] = '[E]' if track_info.explicit else ''
         track_name = track_tags['title']
         codec = track_info.codec
 
@@ -207,7 +211,7 @@ class Downloader:
             self.print(f'Album: {track_info.album_name} ({track_info.album_id})')
         if self.download_mode is not DownloadTypeEnum.artist:
             self.print(f'Artists: {", ".join(track_info.artists)} ({track_info.artist_id})')
-        self.print(f'Year: {track_info.tags.date!s}') if track_info.tags.date else None
+        self.print(f'Release year: {track_info.release_year!s}') if track_info.release_year else None
         if self.download_mode is DownloadTypeEnum.track:
             self.print(f'Service: {self.module_settings[self.service_name].service_name}')
 
@@ -266,25 +270,26 @@ class Downloader:
                 raise
             return
 
-        cover_temp_location = create_temp_filename()
-        jpg_cover_options = CoverOptions(file_type=ImageFileTypeEnum.jpg, resolution=self.global_settings['covers']['main_resolution'], \
-            compression=CoverCompressionEnum[self.global_settings['covers']['main_compression'].lower()])
-        ext_cover_options = CoverOptions(file_type=ImageFileTypeEnum[self.global_settings['covers']['external_format']], \
-            resolution=self.global_settings['covers']['external_resolution'], \
-            compression=CoverCompressionEnum[self.global_settings['covers']['external_compression'].lower()])
-
-        if download_cover:
+        if not cover_temp_location:
+            cover_temp_location = create_temp_filename()
             print()
             covers_module_name = self.third_party_modules[ModuleModes.covers]
             covers_module_name = covers_module_name if covers_module_name != self.service_name else None
             self.print('Downloading artwork' + ((' with ' + covers_module_name) if covers_module_name else ''))
+            
+            jpg_cover_options = CoverOptions(file_type=ImageFileTypeEnum.jpg, resolution=self.global_settings['covers']['main_resolution'], \
+                compression=CoverCompressionEnum[self.global_settings['covers']['main_compression'].lower()])
+            ext_cover_options = CoverOptions(file_type=ImageFileTypeEnum[self.global_settings['covers']['external_format']], \
+                resolution=self.global_settings['covers']['external_resolution'], \
+                compression=CoverCompressionEnum[self.global_settings['covers']['external_compression'].lower()])
+            
             if covers_module_name:
                 default_temp = download_to_temp(track_info.cover_url)
                 test_cover_options = CoverOptions(file_type=ImageFileTypeEnum.jpg, resolution=get_image_resolution(default_temp), compression=CoverCompressionEnum.high)
                 cover_module = self.loaded_modules[covers_module_name]
                 rms_threshold = self.global_settings['advanced']['cover_variance_threshold']
 
-                results = self.search_by_tags(covers_module_name, track_info.tags)
+                results = self.search_by_tags(covers_module_name, track_info)
                 self.print('Covers to test: ' + str(len(results)))
                 attempted_urls = []
                 for i, r in enumerate(results, start=1):
@@ -312,25 +317,22 @@ class Downloader:
                 if self.global_settings['covers']['save_external'] and ModuleModes.covers in self.module_settings[self.service_name].module_supported_modes:
                     ext_cover_info: CoverInfo = self.service.get_track_cover(track_id, ext_cover_options)
                     download_file(ext_cover_info.url, f'{track_location_name}.{ext_cover_info.file_type.name}')
-        else:
-            cover_temp_location = album_location + 'Cover.jpg'
 
         if track_info.animated_cover_url and self.global_settings['covers']['save_animated_cover']:
             self.print('Downloading animated cover')
             download_file(track_info.animated_cover_url, track_location_name + '_cover.mp4', enable_progress_bar=True)
 
         # Get lyrics
+        embedded_lyrics = ''
         if self.global_settings['lyrics']['embed_lyrics'] or self.global_settings['lyrics']['save_synced_lyrics']:
             lyrics_info = LyricsInfo()
-            if track_info.tags.lyrics:
-                self.print('Embedded tags already provided by main module, however this is not recommended behaviour')
-            elif self.third_party_modules[ModuleModes.lyrics] and self.third_party_modules[ModuleModes.lyrics] != self.service_name:
+            if self.third_party_modules[ModuleModes.lyrics] and self.third_party_modules[ModuleModes.lyrics] != self.service_name:
                 lyrics_module_name = self.third_party_modules[ModuleModes.lyrics]
                 self.print('Retrieving lyrics with ' + lyrics_module_name)
                 lyrics_module = self.loaded_modules[lyrics_module_name]
 
                 if lyrics_module_name != self.service_name:
-                    results = self.search_by_tags(lyrics_module_name, track_info.tags)
+                    results = self.search_by_tags(lyrics_module_name, track_info)
                     lyrics_track_id = results[0].result_id if len(results) else None
                 else:
                     lyrics_track_id = track_id
@@ -345,14 +347,13 @@ class Downloader:
                     self.print('Lyrics module could not find any lyrics.')
             elif ModuleModes.lyrics in self.module_settings[self.service_name].module_supported_modes:
                 lyrics_info: LyricsInfo = self.service.get_track_lyrics(track_id)
-
                 # if lyrics_info.embedded or lyrics_info.synced:
                 #     self.print('Lyrics retrieved')
                 # else:
                 #     self.print('No lyrics available')
 
             if lyrics_info.embedded and self.global_settings['lyrics']['embed_lyrics']:
-                track_info.tags.lyrics = lyrics_info.embedded
+                embedded_lyrics = lyrics_info.embedded
             if lyrics_info.synced and self.global_settings['lyrics']['save_synced_lyrics']:
                 lrc_location = f'{track_location_name}.lrc'
                 if not os.path.isfile(lrc_location):
@@ -360,24 +361,22 @@ class Downloader:
                         f.write(lyrics_info.synced)
 
         # Get credits
-        if track_info.tags.credits:
-            self.print('Credits already provided by main module, however this is not recommended behaviour')
-        elif self.third_party_modules[ModuleModes.credits] and self.third_party_modules[ModuleModes.credits] != self.service_name:
+        credits_list = []
+        if self.third_party_modules[ModuleModes.credits] and self.third_party_modules[ModuleModes.credits] != self.service_name:
             credits_module_name = self.third_party_modules[ModuleModes.credits]
             self.print('Retrieving credits with ' + credits_module_name)
             credits_module = self.loaded_modules[credits_module_name]
 
             if credits_module_name != self.service_name:
-                results = self.search_by_tags(credits_module_name, track_info.tags)
+                results = self.search_by_tags(credits_module_name, track_info)
                 credits_track_id = results[0].result_id if len(results) else None
             else:
                 credits_track_id = track_id
             
             if credits_track_id:
                 credits_list = credits_module.get_track_credits(credits_track_id)
-                if credits_list:
-                    # self.print('Credits retrieved')
-                    track_info.tags.credits = credits_list
+                # if credits_list:
+                #     self.print('Credits retrieved')
                 # else:
                 #     self.print('Credits module could not find any credits.')
             # else:
@@ -385,9 +384,8 @@ class Downloader:
         elif ModuleModes.credits in self.module_settings[self.service_name].module_supported_modes:
             self.print('Retrieving credits')
             credits_list = self.service.get_track_credits(track_id)
-            if credits_list:
-                # self.print('Credits retrieved')
-                track_info.tags.credits = credits_list
+            # if credits_list:
+            #     self.print('Credits retrieved')
             # else:
             #     self.print('No credits available')
         
@@ -435,8 +433,8 @@ class Downloader:
         # Finally tag file
         self.print('Tagging file')
         try:
-            tag_file(track_location, cover_temp_location, track_info.tags, container)
-            tag_file(old_track_location, cover_temp_location, track_info.tags, old_container) if old_track_location else None
+            tag_file(track_location, cover_temp_location, track_info, credits_list, embedded_lyrics, container)
+            tag_file(old_track_location, cover_temp_location, track_info, credits_list, embedded_lyrics, old_container) if old_track_location else None
         except TagSavingFailure:
             self.print('Tagging failed, tags saved to text file')
         silentremove(cover_temp_location)
