@@ -31,17 +31,15 @@ class Orpheus:
 
         self.default_global_settings = {
             "general": {
-                "album_search_return_only_albums": False,
                 "artist_download_return_credited_albums": True,
                 "download_path": "./downloads/",
                 "download_quality": "hifi"
             },
             "formatting": {
-                "album_format": "{name} {explicit}",
-                "playlist_format": "{name}",
-                "artist_format": "{name}",
-                "track_filename_format": "{track_number}. {title}",
-                "single_full_path_format": "{title}",
+                "album_format": "{name}{explicit}",
+                "playlist_format": "{name}{explicit}",
+                "track_filename_format": "{track_number}. {name}",
+                "single_full_path_format": "{name}",
                 "enable_zfill": True
             },
             "codecs": {

@@ -176,7 +176,6 @@ class ModuleController:
     get_current_timestamp: FunctionType
     module_error: ClassMethodDescriptorType # DEPRECATED
 
-# TODO: remove tags already in track info
 @dataclass
 class Tags:
     album_artist: Optional[str] = None
@@ -185,7 +184,7 @@ class Tags:
     total_tracks: Optional[int] = None
     copyright: Optional[str] = None
     isrc: Optional[str] = None
-    upc: Optional[int] = None
+    upc: Optional[str] = None
     disc_number: Optional[int] = None
     total_discs: Optional[int] = None
     replay_gain: Optional[float] = None
@@ -214,7 +213,7 @@ class AlbumInfo:
     artist: str
     tracks: list
     release_year: int
-    explicit: bool
+    explicit: Optional[bool] = False
     artist_id: Optional[str] = None
     quality: Optional[str] = None
     booklet_url: Optional[str] = None
@@ -226,8 +225,8 @@ class AlbumInfo:
 @dataclass
 class ArtistInfo:
     name: str
-    albums: list
-    tracks: list
+    albums: Optional[list] = field(default_factory=list)
+    tracks: Optional[list] = field(default_factory=list)
 
 @dataclass
 class PlaylistInfo:
@@ -235,7 +234,7 @@ class PlaylistInfo:
     creator: str
     tracks: list
     release_year: int
-    explicit: bool
+    explicit: Optional[bool] = False
     creator_id: Optional[str] = None
     cover_url: Optional[str] = None
     cover_type: Optional[ImageFileTypeEnum] = ImageFileTypeEnum.jpg
@@ -244,8 +243,8 @@ class PlaylistInfo:
 @dataclass
 class TrackInfo:
     name: str
+    album: str
     album_id: str
-    album_name: str
     artists: list
     download_type: DownloadEnum
     tags: Tags

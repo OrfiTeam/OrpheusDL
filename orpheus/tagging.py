@@ -40,8 +40,8 @@ def tag_file(file_path: str, image_path: str, track_info: TrackInfo, credits_lis
         raise Exception('Unknown container for tagging')
 
     tagger['title'] = track_info.name
-    if track_info.album_name:
-        tagger['album'] = track_info.album_name
+    if track_info.album:
+        tagger['album'] = track_info.album
     if track_info.tags.album_artist:
         tagger['albumartist'] = track_info.tags.album_artist
     tagger['artist'] = track_info.artists[0] # TODO: multiple artists

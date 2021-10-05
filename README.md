@@ -1,6 +1,6 @@
 <!-- PROJECT INTRO -->
 
-<img src='https://svgshare.com/i/__W.svg' title='Octopheus' height="150">
+<img src='https://svgshare.com/i/__W.svg' title='Orfi_temporary' height="150">
 
 OrpheusDL
 =========
@@ -101,7 +101,7 @@ for instance {artist}/{album}.
 <!-- Contact -->
 ## Contact
 
-Yarrm80s (pronounced 'Yeargh mateys!') - [@yarrm80s](https://github.com/yarrm80s)
+Yarrm80s - [@yarrm80s](https://github.com/yarrm80s)
 
 Dniel97 - [@Dniel97](https://github.com/Dniel97)
 

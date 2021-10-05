@@ -26,7 +26,7 @@ class Downloader:
         self.set_indent_number = self.oprinter.set_indent_number
 
     def search_by_tags(self, module_name, track_info: TrackInfo):
-        return self.loaded_modules[module_name].search(DownloadTypeEnum.track, '{title} {artist}'.format(**{*asdict(track_info.tags), *asdict(track_info)}), tags=track_info.tags)
+        return self.loaded_modules[module_name].search(DownloadTypeEnum.track, f'{track_info.name} {" ".join(track_info.artists)}', track_info=track_info)
 
     def download_playlist(self, playlist_id, custom_module=None):
         self.set_indent_number(1)
@@ -103,7 +103,7 @@ class Downloader:
     def download_album(self, album_id, artist_name='', path=None, indent_level=1):
         self.set_indent_number(indent_level)
 
-        album_info: AlbumInfo = self.service.get_album_info(album_id, self.global_settings['general']['album_search_return_only_albums'])
+        album_info: AlbumInfo = self.service.get_album_info(album_id)
         if not album_info:
             return
         number_of_tracks = len(album_info.tracks)
@@ -113,7 +113,7 @@ class Downloader:
             # Clean up album tags and add special explicit and additional formats
             album_tags = {k: sanitise_name(v) for k, v in asdict(album_info).items()}
             album_tags['quality'] = f' [{album_info.quality}]' if album_info.quality else ''
-            album_tags['explicit'] = '[E]' if album_info.explicit else ''
+            album_tags['explicit'] = ' [E]' if album_info.explicit else ''
             album_path = path + self.global_settings['formatting']['album_format'].format(**album_tags) + '/'
             os.makedirs(album_path) if not os.path.exists(album_path) else None
         
@@ -150,12 +150,13 @@ class Downloader:
 
             self.set_indent_number(indent_level)
             self.print(f'=== Album {album_info.name} downloaded ===', drop_level=1)
+            silentremove(cover_temp_location)
         elif number_of_tracks == 1:
             self.download_track(album_info.tracks[0], album_location=path, number_of_tracks=1, main_artist=artist_name, indent_level=indent_level)
 
     def download_artist(self, artist_id):
         artist_info: ArtistInfo = self.service.get_artist_info(artist_id, self.global_settings['general']['artist_download_return_credited_albums'])
-        artist_name = artist_info.artist_name
+        artist_name = artist_info.name
 
         self.set_indent_number(1)
 
@@ -166,14 +167,14 @@ class Downloader:
         self.print(f'Number of albums: {number_of_albums!s}') if number_of_albums else None
         self.print(f'Number of tracks: {number_of_tracks!s}') if number_of_tracks else None
         self.print(f'Service: {self.module_settings[self.service_name].service_name}')
-        artist_path = self.path + self.global_settings['formatting']['artist_format'].format(**artist_info) + '/'
+        artist_path = self.path + artist_name + '/'
 
         for index, album_id in enumerate(artist_info.albums, start=1):
-            self.print(f'Album {index}/{number_of_albums}', drop_level=1)
+            self.print(f'Album {index}/{number_of_albums}')
             self.download_album(album_id, artist_name=artist_name, path=artist_path, indent_level=2)
 
         for index, track_id in enumerate(artist_info.tracks, start=1):
-            self.print(f'Track {index}/{number_of_tracks}', drop_level=1)
+            self.print(f'Track {index}/{number_of_tracks}')
             self.download_track(track_id, album_location=artist_path, main_artist=artist_name, number_of_tracks=1, indent_level=2)
 
         self.set_indent_number(1)
@@ -199,16 +200,15 @@ class Downloader:
 
         # Separate copy of tags for formatting purposes
         zfill_enabled, zfill_list = self.global_settings['formatting']['enable_zfill'], ['track_number', 'total_tracks', 'disc_number', 'total_discs']
-        track_tags = {k: (zfill_lambda(v) if zfill_enabled and k in zfill_list else sanitise_name(v)) for k, v in {*asdict(track_info.tags), *asdict(track_info)}.items()}
+        track_tags = {k: (zfill_lambda(v) if zfill_enabled and k in zfill_list else sanitise_name(v)) for k, v in {**asdict(track_info.tags), **asdict(track_info)}.items()}
         track_tags['explicit'] = '[E]' if track_info.explicit else ''
-        track_name = track_tags['title']
         codec = track_info.codec
 
         self.set_indent_number(indent_level)
-        self.print(f'=== Downloading track {track_name} ({track_id}) ===', drop_level=1)
+        self.print(f'=== Downloading track {track_info.name} ({track_id}) ===', drop_level=1)
 
-        if self.download_mode is not DownloadTypeEnum.album and track_info.album_name:
-            self.print(f'Album: {track_info.album_name} ({track_info.album_id})')
+        if self.download_mode is not DownloadTypeEnum.album and track_info.album:
+            self.print(f'Album: {track_info.album} ({track_info.album_id})')
         if self.download_mode is not DownloadTypeEnum.artist:
             self.print(f'Artists: {", ".join(track_info.artists)} ({track_info.artist_id})')
         self.print(f'Release year: {track_info.release_year!s}') if track_info.release_year else None
@@ -270,8 +270,10 @@ class Downloader:
                 raise
             return
 
+        delete_cover = False
         if not cover_temp_location:
             cover_temp_location = create_temp_filename()
+            delete_cover = True
             print()
             covers_module_name = self.third_party_modules[ModuleModes.covers]
             covers_module_name = covers_module_name if covers_module_name != self.service_name else None
@@ -437,7 +439,7 @@ class Downloader:
             tag_file(old_track_location, cover_temp_location, track_info, credits_list, embedded_lyrics, old_container) if old_track_location else None
         except TagSavingFailure:
             self.print('Tagging failed, tags saved to text file')
-        silentremove(cover_temp_location)
+        silentremove(cover_temp_location) if delete_cover else None
 
         self.print(f'=== Track {track_id} downloaded ===', drop_level=1)
 

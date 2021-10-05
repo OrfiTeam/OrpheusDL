@@ -54,11 +54,12 @@ class ModuleInterface:
 
         tags = Tags( # every single one of these is optional
             album_artist = '',
+            composer = '',
             track_number = 1,
             total_tracks = 1,
             copyright = '',
             isrc = '',
-            upc = 111111111111,
+            upc = '',
             disc_number = 1, # None/0/1 if no discs
             total_discs = 1, # None/0/1 if no discs
             replay_gain = 0.0,
@@ -87,8 +88,7 @@ class ModuleInterface:
             error = '' # only use if there is an error
         )
 
-    def get_album_info(self, album_id: str, get_only_albums: bool) -> Optional[AlbumInfo]: # Mandatory if ModuleModes.download
-        # get_only_albums means no singles and stuff I think, not sure what Dniel97 meant by that
+    def get_album_info(self, album_id: str) -> Optional[AlbumInfo]: # Mandatory if ModuleModes.download
         album_data = self.session.get_album(album_id) # Make sure to cache tracks into track_cache if possible
 
         return AlbumInfo(
@@ -145,10 +145,10 @@ class ModuleInterface:
         track_cover = track_data['lyrics'] 
         return LyricsInfo(embedded='', synced='') # Both optional if not found
 
-    def search(self, query_type: DownloadTypeEnum, query: str, tags: Tags = None, limit: int = 10): # Mandatory
+    def search(self, query_type: DownloadTypeEnum, query: str, track_info: TrackInfo = None, limit: int = 10): # Mandatory
         results = {} # Make sure to cache tracks into track_cache if possible
-        if tags and tags.isrc:
-            results = self.session.search(query_type.name, tags.isrc, limit)
+        if track_info and track_info.tags.isrc:
+            results = self.session.search(query_type.name, track_info.tags.isrc, limit)
         if not results:
             results = self.session.search(query_type.name, query, limit)
 
