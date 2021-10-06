@@ -66,7 +66,6 @@ class Orpheus:
             },
             "advanced": {
                 "advanced_login_system": False,
-                "album_cache_optimisations": True,
                 "codec_conversions": {
                     "alac": "flac"
                 },
@@ -176,7 +175,6 @@ class Orpheus:
                         debug_mode = self.settings['global']['advanced']['debug_mode'],
                         quality_tier = QualityEnum[self.settings['global']['general']['download_quality'].upper()],
                         disable_subscription_check = self.settings['global']['advanced']['disable_subscription_checks'],
-                        album_cache_optimisations = self.settings['global']['advanced']['album_cache_optimisations'],
                         default_cover_options = CoverOptions(
                             file_type = ImageFileTypeEnum[self.settings['global']['covers']['external_format']],
                             resolution = self.settings['global']['covers']['main_resolution'],

@@ -164,7 +164,6 @@ class OrpheusOptions:
     debug_mode: bool
     disable_subscription_check: bool
     quality_tier: QualityEnum # Here because of subscription checking
-    album_cache_optimisations: bool
     default_cover_options: CoverOptions
 
 @dataclass
@@ -251,7 +250,7 @@ class TrackInfo:
     codec: CodecEnum
     cover_url: str
     release_year: int
-    explicit: bool
+    explicit: Optional[bool] = None
     artist_id: Optional[str] = None
     animated_cover_url: Optional[str] = None
     bit_depth: Optional[int] = 16

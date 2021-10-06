@@ -117,6 +117,17 @@ class Downloader:
             album_path = path + self.global_settings['formatting']['album_format'].format(**album_tags) + '/'
             os.makedirs(album_path) if not os.path.exists(album_path) else None
         
+            if self.download_mode is DownloadTypeEnum.album:
+                self.set_indent_number(1)
+            elif self.download_mode is DownloadTypeEnum.artist:
+                self.set_indent_number(2)
+
+            self.print(f'=== Downloading album {album_info.name} ({album_id}) ===', drop_level=1)
+            self.print(f'Artist: {album_info.artist} ({album_info.artist_id})')
+            self.print(f'Year: {album_info.release_year}') if album_info.release_year else None
+            self.print(f'Number of tracks: {number_of_tracks!s}')
+            self.print(f'Service: {self.module_settings[self.service_name].service_name}')
+
             if album_info.booklet_url:
                 self.print('Downloading booklet')
                 download_file(album_info.booklet_url, album_path + 'Booklet.pdf') if album_info.booklet_url and not os.path.exists(album_path + 'Booklet.pdf') else None
@@ -130,17 +141,6 @@ class Downloader:
             if album_info.animated_cover_url and self.global_settings['covers']['save_animated_cover']:
                 self.print('Downloading animated album cover')
                 download_file(album_info.animated_cover_url, album_path + 'Cover.mp4', enable_progress_bar=True)
-            
-            if self.download_mode is DownloadTypeEnum.album:
-                self.set_indent_number(1)
-            elif self.download_mode is DownloadTypeEnum.artist:
-                self.set_indent_number(2)
-
-            self.print(f'=== Downloading album {album_info.name} ({album_id}) ===', drop_level=1)
-            self.print(f'Artist: {album_info.artist} ({album_info.artist_id})')
-            self.print(f'Year: {album_info.release_year}') if album_info.release_year else None
-            self.print(f'Number of tracks: {number_of_tracks!s}')
-            self.print(f'Service: {self.module_settings[self.service_name].service_name}')
 
             for index, track_id in enumerate(album_info.tracks, start=1):
                 self.set_indent_number(indent_level + 1)
@@ -169,12 +169,16 @@ class Downloader:
         self.print(f'Service: {self.module_settings[self.service_name].service_name}')
         artist_path = self.path + artist_name + '/'
 
+        self.set_indent_number(2)
         for index, album_id in enumerate(artist_info.albums, start=1):
-            self.print(f'Album {index}/{number_of_albums}')
+            print()
+            self.print(f'Album {index}/{number_of_albums}', drop_level=1)
             self.download_album(album_id, artist_name=artist_name, path=artist_path, indent_level=2)
 
+        self.set_indent_number(2)
         for index, track_id in enumerate(artist_info.tracks, start=1):
-            self.print(f'Track {index}/{number_of_tracks}')
+            print()
+            self.print(f'Track {index}/{number_of_tracks}', drop_level=1)
             self.download_track(track_id, album_location=artist_path, main_artist=artist_name, number_of_tracks=1, indent_level=2)
 
         self.set_indent_number(1)
@@ -192,8 +196,9 @@ class Downloader:
            self.print('Track is not from the correct artist, skipping', drop_level=1)
            return
         
-        if number_of_tracks and track_index:
+        if track_index:
             track_info.tags.track_number = track_index
+        if number_of_tracks:
             track_info.tags.total_tracks = number_of_tracks
         zfill_number = len(str(track_info.tags.total_tracks)) if self.download_mode is not DownloadTypeEnum.track else 1
         zfill_lambda = lambda input : sanitise_name(str(input)).zfill(zfill_number) if input is not None else None
@@ -274,9 +279,9 @@ class Downloader:
         if not cover_temp_location:
             cover_temp_location = create_temp_filename()
             delete_cover = True
-            print()
             covers_module_name = self.third_party_modules[ModuleModes.covers]
             covers_module_name = covers_module_name if covers_module_name != self.service_name else None
+            print() if covers_module_name else None
             self.print('Downloading artwork' + ((' with ' + covers_module_name) if covers_module_name else ''))
             
             jpg_cover_options = CoverOptions(file_type=ImageFileTypeEnum.jpg, resolution=self.global_settings['covers']['main_resolution'], \
