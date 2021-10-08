@@ -149,7 +149,7 @@ def main():
                     if not service_name:
                         raise Exception(f'URL location "{url.netloc}" is not found in modules!')
 
-                    if orpheus.module_settings[service_name].url_decoding is ManualEnum.orpheus:
+                    if orpheus.module_settings[service_name].url_decoding is ManualEnum.manual:
                         module = orpheus.load_module(service_name)
                         # Some services have weird URLs, give the job to the module if it requests it with the flag 'custom_url_parsing' in its flags
                         type_, id_ = module.custom_url_parse(link)
