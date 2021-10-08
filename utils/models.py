@@ -88,10 +88,8 @@ class TemporarySettingsController:
 
 class ModuleFlags(Flag):
     startup_load = auto()
-    standard_login = auto()
     hidden = auto()
-    jwt_system_enable = auto()
-    custom_url_parsing = auto()
+    enable_jwt_system = auto()
     private = auto()
 
 class ModuleModes(Flag):
@@ -101,17 +99,24 @@ class ModuleModes(Flag):
     credits = auto()
     covers = auto()
 
+class ManualEnum(Flag):
+    orpheus = auto()
+    manual = auto()
+
 @dataclass
 class ModuleInformation:
     service_name: str
     module_supported_modes: ModuleModes
     global_settings: Optional[dict] = field(default_factory=dict)
+    global_storage_variables: Optional[list] = None
     session_settings: Optional[dict] = field(default_factory=dict)
+    session_storage_variables: Optional[list] = None
     flags: Optional[ModuleFlags] = field(default_factory=dict)
     netlocation_constant: Optional[str] = ''
-    temporary_settings: Optional[list] = None
     url_constants: Optional[dict] = None
     test_url: Optional[str] = None
+    url_decoding: Optional[ManualEnum] = ManualEnum.orpheus
+    login_behaviour: Optional[ManualEnum] = ManualEnum.orpheus
 
 @dataclass
 class ExtensionInformation:
@@ -164,9 +169,6 @@ class OrpheusOptions:
     debug_mode: bool
     disable_subscription_check: bool
     quality_tier: QualityEnum # Here because of subscription checking
-    album_search_return_only_albums: bool
-    album_cache_optimisations: bool
-    codec_options: CodecOptions
     default_cover_options: CoverOptions
 
 @dataclass
@@ -176,29 +178,22 @@ class ModuleController:
     temporary_settings_controller: TemporarySettingsController
     orpheus_options: OrpheusOptions
     get_current_timestamp: FunctionType
-    module_error: ClassMethodDescriptorType
+    module_error: ClassMethodDescriptorType # DEPRECATED
 
-# TODO: add all artists here, not just the main one
 @dataclass
 class Tags:
-    title: str
-    album: str
-    artist: str
-    date: int
-    explicit: Optional[bool] = None
     album_artist: Optional[str] = None
-    track_number: Optional[str] = None
-    total_tracks: Optional[str] = None
+    composer: Optional[str] = None
+    track_number: Optional[int] = None
+    total_tracks: Optional[int] = None
     copyright: Optional[str] = None
     isrc: Optional[str] = None
     upc: Optional[str] = None
-    disc_number: Optional[str] = None
-    total_discs: Optional[str] = None
+    disc_number: Optional[int] = None
+    total_discs: Optional[int] = None
     replay_gain: Optional[float] = None
     replay_peak: Optional[float] = None
-    genre: Optional[list] = None
-    lyrics: Optional[list] = None
-    credits: Optional[list] = None
+    genres: Optional[list] = None
 
 @dataclass
 class CoverInfo:
@@ -218,50 +213,55 @@ class CreditsInfo:
 
 @dataclass
 class AlbumInfo:
-    album_name: str
-    artist_name: str
-    artist_id: str
+    name: str
+    artist: str
     tracks: list
-    album_year: Optional[str] = None
-    explicit: Optional[bool] = None
+    release_year: int
+    explicit: Optional[bool] = False
+    artist_id: Optional[str] = None
     quality: Optional[str] = None
     booklet_url: Optional[str] = None
     cover_url: Optional[str] = None
     cover_type: Optional[ImageFileTypeEnum] = ImageFileTypeEnum.jpg
+    all_track_cover_jpg_url: Optional[str] = None
     animated_cover_url: Optional[str] = None
 
 @dataclass
 class ArtistInfo:
-    artist_name: str
-    albums: list
+    name: str
+    albums: Optional[list] = field(default_factory=list)
+    tracks: Optional[list] = field(default_factory=list)
 
 @dataclass
 class PlaylistInfo:
-    playlist_name: str
-    playlist_creator_name: str
+    name: str
+    creator: str
     tracks: list
-    playlist_year: Optional[str] = None
-    explicit: Optional[bool] = None
-    playlist_creator_id: Optional[str] = None
+    release_year: int
+    explicit: Optional[bool] = False
+    creator_id: Optional[str] = None
     cover_url: Optional[str] = None
     cover_type: Optional[ImageFileTypeEnum] = ImageFileTypeEnum.jpg
     animated_cover_url: Optional[str] = None
 
 @dataclass
 class TrackInfo:
-    track_name: str
+    name: str
+    album: str
     album_id: str
-    album_name: str
-    artist_name: str
-    artist_id: str
+    artists: list
     download_type: DownloadEnum
     tags: Tags
     codec: CodecEnum
     cover_url: str
+    release_year: int
+    explicit: Optional[bool] = None
+    artist_id: Optional[str] = None
     animated_cover_url: Optional[str] = None
     bit_depth: Optional[int] = 16
     sample_rate: Optional[float] = 44.1
     bitrate: Optional[int] = None
     file_url: Optional[str] = None
     file_url_headers: Optional[dict] = None
+    tempfile_extra_data: Optional[tuple] = None
     error: Optional[str] = None

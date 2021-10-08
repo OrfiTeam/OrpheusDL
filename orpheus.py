@@ -3,7 +3,6 @@
 import argparse, re
 from urllib.parse import urlparse
 
-from utils.models import ModuleFlags
 from orpheus.core import *
 
 
@@ -35,7 +34,8 @@ def main():
 
     orpheus = Orpheus(args.private)
     if not args.arguments:
-        print('Warning: no arguments given! Use python3 orpheus.py --help for information on usage.')
+        parser.print_help()
+        exit()
 
     orpheus_mode = args.arguments[0].lower()
     if orpheus_mode == 'settings': # These should call functions in a separate py file, that does not yet exist
@@ -149,7 +149,7 @@ def main():
                     if not service_name:
                         raise Exception(f'URL location "{url.netloc}" is not found in modules!')
 
-                    if ModuleFlags.custom_url_parsing in orpheus.module_settings[service_name].flags:
+                    if orpheus.module_settings[service_name].url_decoding is ManualEnum.manual:
                         module = orpheus.load_module(service_name)
                         # Some services have weird URLs, give the job to the module if it requests it with the flag 'custom_url_parsing' in its flags
                         type_, id_ = module.custom_url_parse(link)
