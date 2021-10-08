@@ -263,4 +263,5 @@ class TrackInfo:
     bitrate: Optional[int] = None
     file_url: Optional[str] = None
     file_url_headers: Optional[dict] = None
+    tempfile_extra_data: Optional[tuple] = None
     error: Optional[str] = None

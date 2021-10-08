@@ -1,4 +1,5 @@
 from utils.models import *
+from utils.utils import create_temp_filename
 
 
 module_information = ModuleInformation( # Only service_name and module_supported_modes are mandatory
@@ -86,8 +87,14 @@ class ModuleInterface:
             bitrate = 1411, # optional
             file_url = '', # optional only if download_type isn't DownloadEnum.URL
             file_url_headers = {}, # optional
+            tempfile_extra_data = ('file_url', 'codec'), # optional only if download_type isn't DownloadEnum.TEMP_FILE_PATH
             error = '' # only use if there is an error
         )
+
+    def get_track_tempfile(self, file_url, codec):
+        track_location = create_temp_filename()
+        # Do magic here
+        return track_location
 
     def get_album_info(self, album_id: str) -> Optional[AlbumInfo]: # Mandatory if ModuleModes.download
         album_data = self.session.get_album(album_id) # Make sure to cache tracks into track_cache if possible

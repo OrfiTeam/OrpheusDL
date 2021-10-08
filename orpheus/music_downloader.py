@@ -252,22 +252,19 @@ class Downloader:
         check_location = f'{track_location_name}.{codec_data[check_codec].container.name}'
 
         if os.path.isfile(check_location) and not self.global_settings['advanced']['ignore_existing_files']:
-            self.print('Track file already exists', drop_level=1)
+            self.print('Track file already exists')
             self.print(f'=== Track {track_id} skipped ===', drop_level=1)
             return
 
         # Begin process
+        print()
         self.print("Downloading track file")
         try:
-            if track_info.download_type is DownloadEnum.URL:
-                download_file(track_info.file_url, track_location, headers=track_info.file_url_headers, enable_progress_bar=True, indent_level=self.oprinter.indent_number)
-            elif track_info.download_type is DownloadEnum.TEMP_FILE_PATH:
-                temp_location = self.service.get_track_tempdir(track_id)
-                os.rename(temp_location, track_location)
+            download_file(track_info.file_url, track_location, headers=track_info.file_url_headers, enable_progress_bar=True, indent_level=self.oprinter.indent_number) \
+                if track_info.download_type is DownloadEnum.URL else os.rename(self.service.get_track_tempfile(*track_info.tempfile_extra_data), track_location)
         except:
             self.print('Warning: Track download failed')
-            if self.global_settings['advanced']['debug_mode']:
-                raise
+            if self.global_settings['advanced']['debug_mode']: raise
             return
 
         delete_cover = False
