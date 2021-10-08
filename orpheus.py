@@ -3,7 +3,6 @@
 import argparse, re
 from urllib.parse import urlparse
 
-from utils.models import ModuleFlags
 from orpheus.core import *
 
 
@@ -150,7 +149,7 @@ def main():
                     if not service_name:
                         raise Exception(f'URL location "{url.netloc}" is not found in modules!')
 
-                    if ModuleFlags.custom_url_parsing in orpheus.module_settings[service_name].flags:
+                    if orpheus.module_settings[service_name].url_decoding is ManualEnum.orpheus:
                         module = orpheus.load_module(service_name)
                         # Some services have weird URLs, give the job to the module if it requests it with the flag 'custom_url_parsing' in its flags
                         type_, id_ = module.custom_url_parse(link)

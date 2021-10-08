@@ -7,15 +7,13 @@ module_information = ModuleInformation( # Only service_name and module_supported
     flags = ModuleFlags.hidden,
     # Flags:
         # startup_load: load module on startup
-        # standard_login: handles logins for the module automatically, calling login() when needed
         # hidden: hides module from CLI help options
         # jwt_system_enable: handles bearer and refresh tokens automatically, though currently untested
-        # custom_url_parsing: instead of the simple system of taking the url_constants dict as input, 
-        #     and the final part of the URL as the ID, let the module handle it instead
         # private: override any public modules, only enabled with the -p/--private argument, currently broken
     global_settings = {},
+    global_storage_variables = [],
     session_settings = {},
-    temporary_settings = ['access_token'],
+    session_storage_variables = ['access_token'],
     netlocation_constant = 'example', 
     test_url = 'https://player.example.com/track/idhere',
     url_constants = { # This is the default if no url_constants is given. Unused if custom_url_parsing is flagged
@@ -23,7 +21,10 @@ module_information = ModuleInformation( # Only service_name and module_supported
         'album': DownloadTypeEnum.album,
         'playlist': DownloadTypeEnum.playlist,
         'artist': DownloadTypeEnum.artist
-    } # How this works: if '/track/' is detected in the URL, then track downloading is triggered
+    }, # How this works: if '/track/' is detected in the URL, then track downloading is triggered
+    login_behaviour = ManualEnum.manual, # setting to ManualEnum.manual disables Orpheus automatically calling login() when needed
+    url_decoding = ManualEnum.orpheus # setting to ManualEnum.manual disables Orpheus' automatic url decoding which works as follows:
+    # taking the url_constants dict as a list of constants to check for in the url's segments, and the final part of the URL as the ID
 )
 
 

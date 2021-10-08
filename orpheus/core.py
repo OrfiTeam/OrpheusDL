@@ -31,7 +31,6 @@ class Orpheus:
 
         self.default_global_settings = {
             "general": {
-                "artist_download_return_credited_albums": True,
                 "download_path": "./downloads/",
                 "download_quality": "hifi"
             },
@@ -87,16 +86,11 @@ class Orpheus:
         self.settings_location = 'config/settings.json'
         self.session_storage_location = 'config/loginstorage.bin'
 
-        os.mkdir('config') if not os.path.exists('config') else None
-
+        if not os.path.exists('config'): os.makedirs('config')
         self.settings = json.loads(open(self.settings_location, 'r').read()) if os.path.exists(self.settings_location) else {}
+        if self.settings['global']['advanced']['debug_mode']: logging.basicConfig(level=logging.DEBUG)
 
-        try:
-            logging.basicConfig(level=logging.DEBUG) if self.settings['global']['advanced']['debug_mode'] else None
-        except:
-            pass
-
-        os.mkdir('extensions') if not os.path.exists('extensions') else None
+        if not os.path.exists('extensions'): os.makedirs('extensions')
         for extension in os.listdir('extensions'):  # Loading extensions
             if os.path.isdir(f'extensions/{extension}') and os.path.exists(f'extensions/{extension}/interface.py'):
                 class_ = getattr(importlib.import_module(f'extensions.{extension}.interface'), 'OrpheusExtension', None)
@@ -107,7 +101,7 @@ class Orpheus:
                     raise Exception('Error loading extension: "{extension}"')
 
         # Module preparation (not loaded yet for performance purposes)
-        os.mkdir('modules') if not os.path.exists('modules') else None
+        if not os.path.exists('modules'): os.makedirs('modules')
         module_list = [module.lower() for module in os.listdir('modules') if os.path.exists(f'modules/{module}/interface.py')]
         if not module_list or module_list == ['example']:
             print('No modules are installed, quitting')
@@ -131,7 +125,7 @@ class Orpheus:
                 if url_constant not in self.module_netloc_constants:
                     self.module_netloc_constants[url_constant] = module
                 elif ModuleFlags.private in module_info.flags: # Replacing public modules with private ones
-                    duplicates.add(url_constant) if ModuleFlags.private in self.module_settings[url_constant].flags else None
+                    if ModuleFlags.private in self.module_settings[url_constant].flags: duplicates.add(url_constant)
                 else:
                     duplicates.add(url_constant)
         
@@ -166,7 +160,7 @@ class Orpheus:
                         super().__init__(module + ' --> ' + str(message))
                 
                 module_controller = ModuleController(
-                    module_settings = self.settings['modules'][module] if module in self.settings['modules'] else None,
+                    module_settings = self.settings['modules'][module] if module in self.settings['modules'] else {},
                     extensions = self.extensions,
                     temporary_settings_controller = TemporarySettingsController(module, self.session_storage_location),
                     module_error = ModuleError, # DEPRECATED
@@ -187,9 +181,9 @@ class Orpheus:
                 self.loaded_modules[module] = loaded_module
 
                 # Check if module has settings
-                settings = self.settings['modules'][module] if module in self.settings['modules'] else None
+                settings = self.settings['modules'][module] if module in self.settings['modules'] else {}
                 temporary_session = read_temporary_setting(self.session_storage_location, module)
-                if ModuleFlags.standard_login in self.module_settings[module].flags:
+                if self.module_settings[module].login_behaviour is ManualEnum.orpheus:
                     username = settings['email'] if 'email' in settings else settings['username'] 
                     # Login if simple mode, username login and requested by update_setting_storage
                     if temporary_session and temporary_session['clear_session'] and not self.settings['global']['advanced']['advanced_login_system']:
@@ -199,9 +193,9 @@ class Orpheus:
                             print('Logging into ' + self.module_settings[module].service_name)
                             loaded_module.login(username, settings['password'])
                             set_temporary_setting(self.session_storage_location, module, 'emailhash', None, emailhash)
-                elif ModuleFlags.jwt_system_enable in self.module_settings[module].flags and temporary_session and \
-                        temporary_session['refresh'] and not temporary_session['bearer']:
-                    loaded_module.refresh_login()
+                    if ModuleFlags.enable_jwt_system in self.module_settings[module].flags and temporary_session and \
+                            temporary_session['refresh'] and not temporary_session['bearer']:
+                        loaded_module.refresh_login()
 
                 logging.debug(f'Orpheus: {module} module has been loaded')
                 return loaded_module
@@ -265,35 +259,28 @@ class Orpheus:
         new_settings['modules'] = module_settings
 
         ## Sessions
-        if not os.path.exists(self.session_storage_location):
-            pickle.dump({}, open(self.session_storage_location, 'wb'))
-        sessions = pickle.load(open(self.session_storage_location, 'rb'))
+        sessions = pickle.load(open(self.session_storage_location, 'rb')) if os.path.exists(self.session_storage_location) else {}
 
         if not ('advancedmode' in sessions and 'modules' in sessions and sessions['advancedmode'] == advanced_login_mode):
             sessions = {'advancedmode': advanced_login_mode, 'modules':{}}
 
-        # in format {advancedmode, modules: {modulename: {default, type, sessions: [sessionname: {##}]}}}
-        # where ## is 'custom_data':{} plus if jwt 'access, refresh' (+ emailhash in simple)
+        # in format {advancedmode, modules: {modulename: {default, type, custom_global, sessions: [sessionname: {##}]}}}
+        # where ## is 'custom_session' plus if jwt 'access, refresh' (+ emailhash in simple)
         # in the special case of simple mode, session is always called default
         new_module_sessions = {}
         for i in self.module_list:
             # Clear storage if type changed
             new_module_sessions[i] = sessions['modules'][i] if i in sessions['modules'] else {'selected':'default', 'sessions':{'default':{}}}
 
-            setting_types = set()
-            if ModuleFlags.jwt_system_enable in self.module_settings[i].flags:
-                setting_types.add('jwt')
-            elif self.module_settings[i].temporary_settings:
-                setting_types.add('custom')
-            else:
-                new_module_sessions.pop(i)
-                continue
+            if self.module_settings[i].global_storage_variables: new_module_sessions[i]['custom_global'] = \
+                {j:new_module_sessions[i][j] for j in self.module_settings[i].global_storage_variables \
+                    if 'custom_global' in new_module_sessions[i] and j in new_module_sessions[i]['custom_global'] and not clear_session}
             
             for current_session in new_module_sessions[i]['sessions'].values():
                 # For simple login type only, as it does not apply to advanced login
                 clear_session = False
 
-                if ModuleFlags.standard_login in self.module_settings[i].flags and not advanced_login_mode:
+                if self.module_settings[i].login_behaviour is ManualEnum.orpheus and not advanced_login_mode:
                     username = module_settings[i]['email'] if 'email' in module_settings[i] else module_settings[i]['username']
                     if ('emailhash' in current_session and current_session['emailhash'] != hash_string(username)) or ('emailhash' not in current_session):
                         current_session['emailhash'] = ''
@@ -302,30 +289,25 @@ class Orpheus:
 
                 current_session['clear_session'] = clear_session
 
-                if 'jwt' in setting_types:
+                if ModuleFlags.enable_jwt_system in self.module_settings[i].flags:
                     if 'bearer' in current_session and current_session['bearer'] and not clear_session:
                         # Clears bearer token if it's expired
                         try:
                             time_left_until_refresh = json.loads(base64.b64decode(current_session['bearer'].split('.')[0]))['exp'] - true_current_utc_timestamp()
-                            current_session['bearer'] = current_session['bearer'] if time_left_until_refresh > 0 else None
+                            current_session['bearer'] = current_session['bearer'] if time_left_until_refresh > 0 else ''
                         except:
                             pass
                     else:
-                        current_session['bearer'] = None
-                        current_session['refresh'] = None
+                        current_session['bearer'] = ''
+                        current_session['refresh'] = ''
                 else:
-                    current_session.pop('bearer') if 'bearer' in current_session else None
-                    current_session.pop('refreh') if 'refresh' in current_session else None
+                    if 'bearer' in current_session: current_session.pop('bearer')
+                    if 'refresh' in current_session: current_session.pop('refresh')
 
-                # Deletes custom data if the module doesn't exist or adds/removes temporary settings
-                if 'custom' in setting_types:
-                    current_session['custom_data'] = {} if not 'custom_data' in current_session else current_session['custom_data']
-                    new_data = {}
-                    for j in self.module_settings[i].temporary_settings:
-                        new_data[j] = current_session['custom_data'][j] if 'custom_data' in current_session and j in current_session['custom_data'] and not clear_session else None
-                    current_session['custom_data'] = new_data
-                else:
-                    current_session.pop('custom_data') if 'custom_data' in current_session else None
+                if self.module_settings[i].session_storage_variables: current_session['custom_data'] = \
+                    {j:current_session['custom_data'][j] for j in self.module_settings[i].session_storage_variables \
+                        if 'custom_data' in current_session and j in current_session['custom_data'] and not clear_session}
+                elif 'custom_data' in current_session: current_session.pop('custom_data')
 
         pickle.dump({'advancedmode': advanced_login_mode, 'modules': new_module_sessions}, open(self.session_storage_location, 'wb'))
         open(self.settings_location, 'w').write(json.dumps(new_settings, indent = 4, sort_keys = False))
@@ -337,7 +319,7 @@ class Orpheus:
 
 def orpheus_core_download(orpheus_session: Orpheus, media_to_download, third_party_modules, separate_download_module, output_path):
     downloader = Downloader(orpheus_session.settings['global'], orpheus_session.module_controls, output_path)
-    os.mkdir('temp') if not os.path.exists('temp') else None
+    if not os.path.exists('temp'): os.makedirs('temp')
 
     for media in media_to_download:
         mainmodule = media.service_name
@@ -385,4 +367,4 @@ def orpheus_core_download(orpheus_session: Orpheus, media_to_download, third_par
                 raise Exception(f'\tUnknown media type "{mediatype}"')
         print()
 
-    shutil.rmtree('temp') if os.path.exists('temp') else None
+    if os.path.exists('temp'): shutil.rmtree('temp')

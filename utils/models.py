@@ -88,10 +88,8 @@ class TemporarySettingsController:
 
 class ModuleFlags(Flag):
     startup_load = auto()
-    standard_login = auto()
     hidden = auto()
-    jwt_system_enable = auto()
-    custom_url_parsing = auto()
+    enable_jwt_system = auto()
     private = auto()
 
 class ModuleModes(Flag):
@@ -101,17 +99,24 @@ class ModuleModes(Flag):
     credits = auto()
     covers = auto()
 
+class ManualEnum(Flag):
+    orpheus = auto()
+    manual = auto()
+
 @dataclass
 class ModuleInformation:
     service_name: str
     module_supported_modes: ModuleModes
     global_settings: Optional[dict] = field(default_factory=dict)
+    global_storage_variables: Optional[list] = None
     session_settings: Optional[dict] = field(default_factory=dict)
+    session_storage_variables: Optional[list] = None
     flags: Optional[ModuleFlags] = field(default_factory=dict)
     netlocation_constant: Optional[str] = ''
-    temporary_settings: Optional[list] = None
     url_constants: Optional[dict] = None
     test_url: Optional[str] = None
+    url_decoding: Optional[ManualEnum] = ManualEnum.orpheus
+    login_behaviour: Optional[ManualEnum] = ManualEnum.orpheus
 
 @dataclass
 class ExtensionInformation:

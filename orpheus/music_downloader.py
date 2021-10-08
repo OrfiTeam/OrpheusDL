@@ -35,15 +35,15 @@ class Downloader:
         playlist_info: PlaylistInfo = self.service.get_playlist_info(playlist_id)
         self.print(f'=== Downloading playlist {playlist_info.name} ({playlist_id}) ===', drop_level=1)
         self.print(f'Playlist creator: {playlist_info.creator}' + (f'({playlist_info.creator_id})' if playlist_info.creator_id else ''))
-        self.print(f'Playlist creation year: {playlist_info.release_year}') if playlist_info.release_year else None
+        if playlist_info.release_year: self.print(f'Playlist creation year: {playlist_info.release_year}')
         number_of_tracks = len(playlist_info.tracks)
         self.print(f'Number of tracks: {number_of_tracks!s}')
         self.print(f'Service: {self.module_settings[self.service_name].service_name}')
         
         playlist_tags = {k: sanitise_name(v) for k, v in asdict(playlist_info).items()}
-        playlist_tags['explicit'] = '[E]' if playlist_info.explicit else ''
+        playlist_tags['explicit'] = ' [E]' if playlist_info.explicit else ''
         playlist_path = self.path + self.global_settings['formatting']['playlist_format'].format(**playlist_tags) + '/'
-        os.makedirs(playlist_path) if not os.path.exists(playlist_path) else None
+        if not os.path.exists(playlist_path): os.makedirs(playlist_path)
         
         if playlist_info.cover_url:
             self.print('Downloading playlist cover')
@@ -98,7 +98,7 @@ class Downloader:
         self.set_indent_number(1)
         self.print(f'=== Playlist {playlist_info.name} downloaded ===', drop_level=1)
 
-        logging.debug('Failed tracks: ' + ', '.join(tracks_errored)) if tracks_errored else None
+        if tracks_errored: logging.debug('Failed tracks: ' + ', '.join(tracks_errored))
 
     def download_album(self, album_id, artist_name='', path=None, indent_level=1):
         self.set_indent_number(indent_level)
@@ -115,7 +115,7 @@ class Downloader:
             album_tags['quality'] = f' [{album_info.quality}]' if album_info.quality else ''
             album_tags['explicit'] = ' [E]' if album_info.explicit else ''
             album_path = path + self.global_settings['formatting']['album_format'].format(**album_tags) + '/'
-            os.makedirs(album_path) if not os.path.exists(album_path) else None
+            if not os.path.exists(album_path): os.makedirs(album_path)
         
             if self.download_mode is DownloadTypeEnum.album:
                 self.set_indent_number(1)
@@ -124,13 +124,13 @@ class Downloader:
 
             self.print(f'=== Downloading album {album_info.name} ({album_id}) ===', drop_level=1)
             self.print(f'Artist: {album_info.artist} ({album_info.artist_id})')
-            self.print(f'Year: {album_info.release_year}') if album_info.release_year else None
+            if album_info.release_year: self.print(f'Year: {album_info.release_year}')
             self.print(f'Number of tracks: {number_of_tracks!s}')
             self.print(f'Service: {self.module_settings[self.service_name].service_name}')
 
-            if album_info.booklet_url:
+            if album_info.booklet_url and not os.path.exists(album_path + 'Booklet.pdf'):
                 self.print('Downloading booklet')
-                download_file(album_info.booklet_url, album_path + 'Booklet.pdf') if album_info.booklet_url and not os.path.exists(album_path + 'Booklet.pdf') else None
+                download_file(album_info.booklet_url, album_path + 'Booklet.pdf')
             
             cover_temp_location = download_to_temp(album_info.all_track_cover_jpg_url) if album_info.all_track_cover_jpg_url else ''
 
@@ -150,7 +150,7 @@ class Downloader:
 
             self.set_indent_number(indent_level)
             self.print(f'=== Album {album_info.name} downloaded ===', drop_level=1)
-            silentremove(cover_temp_location)
+            if cover_temp_location: silentremove(cover_temp_location)
         elif number_of_tracks == 1:
             self.download_track(album_info.tracks[0], album_location=path, number_of_tracks=1, main_artist=artist_name, indent_level=indent_level)
 
@@ -164,8 +164,8 @@ class Downloader:
         number_of_tracks = len(artist_info.tracks)
 
         self.print(f'=== Downloading artist {artist_name} ({artist_id}) ===', drop_level=1)
-        self.print(f'Number of albums: {number_of_albums!s}') if number_of_albums else None
-        self.print(f'Number of tracks: {number_of_tracks!s}') if number_of_tracks else None
+        if number_of_albums: self.print(f'Number of albums: {number_of_albums!s}')
+        if number_of_tracks: self.print(f'Number of tracks: {number_of_tracks!s}')
         self.print(f'Service: {self.module_settings[self.service_name].service_name}')
         artist_path = self.path + artist_name + '/'
 
@@ -212,18 +212,15 @@ class Downloader:
         self.set_indent_number(indent_level)
         self.print(f'=== Downloading track {track_info.name} ({track_id}) ===', drop_level=1)
 
-        if self.download_mode is not DownloadTypeEnum.album and track_info.album:
-            self.print(f'Album: {track_info.album} ({track_info.album_id})')
-        if self.download_mode is not DownloadTypeEnum.artist:
-            self.print(f'Artists: {", ".join(track_info.artists)} ({track_info.artist_id})')
-        self.print(f'Release year: {track_info.release_year!s}') if track_info.release_year else None
-        if self.download_mode is DownloadTypeEnum.track:
-            self.print(f'Service: {self.module_settings[self.service_name].service_name}')
+        if self.download_mode is not DownloadTypeEnum.album and track_info.album: self.print(f'Album: {track_info.album} ({track_info.album_id})')
+        if self.download_mode is not DownloadTypeEnum.artist: self.print(f'Artists: {", ".join(track_info.artists)} ({track_info.artist_id})')
+        if track_info.release_year: self.print(f'Release year: {track_info.release_year!s}')
+        if self.download_mode is DownloadTypeEnum.track: self.print(f'Service: {self.module_settings[self.service_name].service_name}')
 
         to_print = 'Codec: ' + codec_data[codec].pretty_name
-        to_print += f', bitrate: {track_info.bitrate!s}kbps' if track_info.bitrate else ''
-        to_print += f', bit depth: {track_info.bit_depth!s}bit' if track_info.bit_depth else ''
-        to_print += f', sample rate: {track_info.sample_rate!s}kHz' if track_info.sample_rate else ''
+        if track_info.bitrate: to_print += f', bitrate: {track_info.bitrate!s}kbps'
+        if track_info.bit_depth: to_print += f', bit depth: {track_info.bit_depth!s}bit'
+        if track_info.sample_rate: to_print += f', sample rate: {track_info.sample_rate!s}kHz'
         self.print(to_print)
 
         # Check if track_info returns error, display it and return this function to not download the track
@@ -234,15 +231,13 @@ class Downloader:
         if self.download_mode is DownloadTypeEnum.track:
             track_location_name = self.path + self.global_settings['formatting']['single_full_path_format'].format(**track_tags)
             track_folder = track_location_name[:track_location_name.rfind('/')]
-            os.makedirs(track_folder) if not os.path.exists(track_folder) else None
+            if not os.path.exists(track_folder): os.makedirs(track_folder)
         else:
             album_location = album_location.replace('\\', '/')
-            album_location += f'CD {track_info.tags.disc_number!s}/' if track_info.tags.total_discs and track_info.tags.total_discs > 1 else ''
-            os.makedirs(album_location) if not os.path.exists(album_location) and album_location else None
-            if track_info.tags.total_tracks == 1:
-                track_location_name = album_location + self.global_settings['formatting']['single_full_path_format'].format(**track_tags)
-            else:
-                track_location_name = album_location + self.global_settings['formatting']['track_filename_format'].format(**track_tags)
+            if track_info.tags.total_discs and track_info.tags.total_discs > 1: album_location += f'CD {track_info.tags.disc_number!s}/'
+            if album_location and os.path.exists(album_location): os.makedirs(album_location)
+            track_location_name = album_location + self.global_settings['formatting']['single_full_path_format'].format(**track_tags) if \
+                track_info.tags.total_tracks == 1 else album_location + self.global_settings['formatting']['track_filename_format'].format(**track_tags)
 
         try:
             conversions = {CodecEnum[k.upper()]: CodecEnum[v.upper()] for k, v in self.global_settings['advanced']['codec_conversions'].items()}
@@ -281,7 +276,7 @@ class Downloader:
             delete_cover = True
             covers_module_name = self.third_party_modules[ModuleModes.covers]
             covers_module_name = covers_module_name if covers_module_name != self.service_name else None
-            print() if covers_module_name else None
+            if covers_module_name: print()
             self.print('Downloading artwork' + ((' with ' + covers_module_name) if covers_module_name else ''))
             
             jpg_cover_options = CoverOptions(file_type=ImageFileTypeEnum.jpg, resolution=self.global_settings['covers']['main_resolution'], \
@@ -441,11 +436,11 @@ class Downloader:
         self.print('Tagging file')
         try:
             tag_file(track_location, cover_temp_location, track_info, credits_list, embedded_lyrics, container)
-            tag_file(old_track_location, cover_temp_location, track_info, credits_list, embedded_lyrics, old_container) if old_track_location else None
+            if old_track_location: tag_file(old_track_location, cover_temp_location, track_info, credits_list, embedded_lyrics, old_container)
         except TagSavingFailure:
             self.print('Tagging failed, tags saved to text file')
-        silentremove(cover_temp_location) if delete_cover else None
-
+        if delete_cover: silentremove(cover_temp_location)
+        
         self.print(f'=== Track {track_id} downloaded ===', drop_level=1)
 
 
