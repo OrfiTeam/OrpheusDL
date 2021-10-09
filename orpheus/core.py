@@ -321,50 +321,50 @@ def orpheus_core_download(orpheus_session: Orpheus, media_to_download, third_par
     downloader = Downloader(orpheus_session.settings['global'], orpheus_session.module_controls, output_path)
     if not os.path.exists('temp'): os.makedirs('temp')
 
-    for media in media_to_download:
-        mainmodule = media.service_name
-        if ModuleModes.download not in orpheus_session.module_settings[mainmodule].module_supported_modes:
-            raise Exception(f'{mainmodule} does not support track downloading') # TODO: replace with ModuleDoesNotSupportAbility
+    for mainmodule, items in media_to_download.items():
+        for media in items:
+            if ModuleModes.download not in orpheus_session.module_settings[mainmodule].module_supported_modes:
+                raise Exception(f'{mainmodule} does not support track downloading') # TODO: replace with ModuleDoesNotSupportAbility
 
-        # Load and prepare module
-        music = orpheus_session.load_module(mainmodule)
-        downloader.service = music
-        downloader.service_name = mainmodule
+            # Load and prepare module
+            music = orpheus_session.load_module(mainmodule)
+            downloader.service = music
+            downloader.service_name = mainmodule
 
-        for i in third_party_modules:
-            moduleselected = third_party_modules[i]
-            if moduleselected:
-                if moduleselected not in orpheus_session.module_list:
-                    raise Exception(f'{moduleselected} does not exist in modules.') # TODO: replace with InvalidModuleError
-                elif i not in orpheus_session.module_settings[moduleselected].module_supported_modes:
-                    raise Exception(f'Module {moduleselected} does not support {i}') # TODO: replace with ModuleDoesNotSupportAbility
+            for i in third_party_modules:
+                moduleselected = third_party_modules[i]
+                if moduleselected:
+                    if moduleselected not in orpheus_session.module_list:
+                        raise Exception(f'{moduleselected} does not exist in modules.') # TODO: replace with InvalidModuleError
+                    elif i not in orpheus_session.module_settings[moduleselected].module_supported_modes:
+                        raise Exception(f'Module {moduleselected} does not support {i}') # TODO: replace with ModuleDoesNotSupportAbility
+                    else:
+                        # If all checks pass, load up the selected module
+                        orpheus_session.load_module(moduleselected)
+
+            downloader.third_party_modules = third_party_modules
+
+            mediatype = media.media_type
+            media_id = media.media_id
+
+            downloader.download_mode = mediatype
+
+            # Mode to download playlist using other service
+            if separate_download_module != 'default' and separate_download_module != mainmodule:
+                if mediatype is not DownloadTypeEnum.playlist:
+                    raise Exception('The separate download module option is only for playlists.') # TODO: replace with ModuleDoesNotSupportAbility
+                downloader.download_playlist(media_id, custom_module=separate_download_module, extra_kwargs=media.extra_kwargs)
+            else:  # Standard download modes
+                if mediatype is DownloadTypeEnum.album:
+                    downloader.download_album(media_id, extra_kwargs=media.extra_kwargs)
+                elif mediatype is DownloadTypeEnum.track:
+                    downloader.download_track(media_id, extra_kwargs=media.extra_kwargs)
+                elif mediatype is DownloadTypeEnum.playlist:
+                    downloader.download_playlist(media_id, extra_kwargs=media.extra_kwargs)
+                elif mediatype is DownloadTypeEnum.artist:
+                    downloader.download_artist(media_id, extra_kwargs=media.extra_kwargs)
                 else:
-                    # If all checks pass, load up the selected module
-                    orpheus_session.load_module(moduleselected)
-
-        downloader.third_party_modules = third_party_modules
-
-        mediatype = media.media_type
-        media_id = media.media_id
-
-        downloader.download_mode = mediatype
-
-        # Mode to download playlist using other service
-        if separate_download_module != 'default' and separate_download_module != mainmodule:
-            if mediatype is not DownloadTypeEnum.playlist:
-                raise Exception('The separate download module option is only for playlists.') # TODO: replace with ModuleDoesNotSupportAbility
-            downloader.download_playlist(media_id, custom_module = separate_download_module)
-        else:  # Standard download modes
-            if mediatype is DownloadTypeEnum.album:
-                downloader.download_album(media_id)
-            elif mediatype is DownloadTypeEnum.track:
-                downloader.download_track(media_id)
-            elif mediatype is DownloadTypeEnum.playlist:
-                downloader.download_playlist(media_id)
-            elif mediatype is DownloadTypeEnum.artist:
-                downloader.download_artist(media_id)
-            else:
-                raise Exception(f'\tUnknown media type "{mediatype}"')
-        print()
+                    raise Exception(f'\tUnknown media type "{mediatype}"')
+            print()
 
     if os.path.exists('temp'): shutil.rmtree('temp')

@@ -34,6 +34,7 @@ class SearchResult:
     year: Optional[str] = None
     explicit: Optional[bool] = False
     additional: Optional[list] = None
+    extra_kwargs: Optional[dict] = field(default_factory=dict)
 
 @dataclass
 class CodecData:
@@ -130,12 +131,11 @@ class DownloadTypeEnum(Flag):
     artist = auto()
     album = auto()
 
-@dataclass # Kinda pointless, but still
+@dataclass
 class MediaIdentification:
     media_type: DownloadTypeEnum
     media_id: str
-    service_name: str
-    url: Optional[str] = None
+    extra_kwargs: Optional[dict] = field(default_factory=dict)
 
 class QualityEnum(Flag):
     LOW = auto()
@@ -225,12 +225,15 @@ class AlbumInfo:
     cover_type: Optional[ImageFileTypeEnum] = ImageFileTypeEnum.jpg
     all_track_cover_jpg_url: Optional[str] = None
     animated_cover_url: Optional[str] = None
+    track_extra_kwargs: Optional[dict] = field(default_factory=dict)
 
 @dataclass
 class ArtistInfo:
     name: str
     albums: Optional[list] = field(default_factory=list)
+    album_extra_kwargs: Optional[dict] = field(default_factory=dict)
     tracks: Optional[list] = field(default_factory=list)
+    track_extra_kwargs: Optional[dict] = field(default_factory=dict)
 
 @dataclass
 class PlaylistInfo:
@@ -243,6 +246,7 @@ class PlaylistInfo:
     cover_url: Optional[str] = None
     cover_type: Optional[ImageFileTypeEnum] = ImageFileTypeEnum.jpg
     animated_cover_url: Optional[str] = None
+    track_extra_kwargs: Optional[dict] = field(default_factory=dict)
 
 @dataclass
 class TrackInfo:
@@ -250,7 +254,6 @@ class TrackInfo:
     album: str
     album_id: str
     artists: list
-    download_type: DownloadEnum
     tags: Tags
     codec: CodecEnum
     cover_url: str
@@ -261,7 +264,15 @@ class TrackInfo:
     bit_depth: Optional[int] = 16
     sample_rate: Optional[float] = 44.1
     bitrate: Optional[int] = None
+    download_extra_kwargs: Optional[dict] = field(default_factory=dict)
+    cover_extra_kwargs: Optional[dict] = field(default_factory=dict)
+    credits_extra_kwargs: Optional[dict] = field(default_factory=dict)
+    lyrics_extra_kwargs: Optional[dict] = field(default_factory=dict)
+    error: Optional[str] = None
+
+@dataclass
+class TrackDownloadInfo:
+    download_type: DownloadEnum
     file_url: Optional[str] = None
     file_url_headers: Optional[dict] = None
-    tempfile_extra_data: Optional[tuple] = None
-    error: Optional[str] = None
+    temp_file_path: Optional[str] = None

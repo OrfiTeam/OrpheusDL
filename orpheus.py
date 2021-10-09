@@ -124,8 +124,8 @@ def main():
                                 print(f'{str(index)}. {item.name} {additional_details}')
                         selection = int(input('Selection: '))-1
                         print()
-                    itemID = items[selection].result_id
-                    media_to_download = [MediaIdentification(media_type=query_type, media_id=itemID, service_name=modulename)]
+                    selected_item: SearchResult = items[selection]
+                    media_to_download = {modulename: [MediaIdentification(media_type=query_type, media_id=selected_item.result_id, extra_kwargs=selected_item.extra_kwargs)]}
                 elif modulename == 'multi':
                     return  # TODO
                 else:
@@ -137,7 +137,7 @@ def main():
 
         else:  # if no specific modes are detected, parse as urls, but first try loading as a list of URLs
             arguments = tuple(open(args.arguments[0], 'r')) if len(args.arguments) == 1 and os.path.exists(args.arguments[0]) else args.arguments
-            media_to_download: list[MediaIdentification] = []
+            media_to_download = {}
             for link in arguments:
                 if link.startswith('http'):
                     url = urlparse(link)
@@ -145,14 +145,14 @@ def main():
 
                     service_name = None
                     for i in orpheus.module_netloc_constants:
-                        service_name = orpheus.module_netloc_constants[i] if re.findall(i, url.netloc) else service_name
+                        if re.findall(i, url.netloc): service_name = orpheus.module_netloc_constants[i]
                     if not service_name:
                         raise Exception(f'URL location "{url.netloc}" is not found in modules!')
+                    if service_name not in media_to_download: media_to_download[service_name] = []
 
                     if orpheus.module_settings[service_name].url_decoding is ManualEnum.manual:
                         module = orpheus.load_module(service_name)
-                        # Some services have weird URLs, give the job to the module if it requests it with the flag 'custom_url_parsing' in its flags
-                        type_, id_ = module.custom_url_parse(link)
+                        media_to_download[service_name].append(module.custom_url_parse(link))
                     else:
                         if not components or len(components) <= 2:
                             print(f'\tInvalid URL: "{link}"')
@@ -174,8 +174,8 @@ def main():
                             print('Invalid URL entered, quitting')
                             exit() # TODO: replace with InvalidInput
                         id_ = components[-1]
-
-                    media_to_download.append(MediaIdentification(media_type=type_, media_id=id_, service_name=service_name, url=link))
+                        
+                        media_to_download[service_name].append(MediaIdentification(media_type=type_, media_id=id_))
                 else:
                     raise Exception(f'Invalid argument: "{link}"')
 
@@ -190,7 +190,7 @@ def main():
             tpm[i] = moduleselected
         sdm = args.separatedownload.lower()
 
-        if len(media_to_download) == 0:
+        if not media_to_download:
             print('No links given')
 
         orpheus_core_download(orpheus, media_to_download, tpm, sdm, path)

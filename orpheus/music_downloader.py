@@ -28,11 +28,11 @@ class Downloader:
     def search_by_tags(self, module_name, track_info: TrackInfo):
         return self.loaded_modules[module_name].search(DownloadTypeEnum.track, f'{track_info.name} {" ".join(track_info.artists)}', track_info=track_info)
 
-    def download_playlist(self, playlist_id, custom_module=None):
+    def download_playlist(self, playlist_id, custom_module=None, extra_kwargs={}):
         self.set_indent_number(1)
 
         # returns in form {playlist_name, playlist_creator_name, playlist_creator_id, tracks:[track_id]}
-        playlist_info: PlaylistInfo = self.service.get_playlist_info(playlist_id)
+        playlist_info: PlaylistInfo = self.service.get_playlist_info(playlist_id, **extra_kwargs)
         self.print(f'=== Downloading playlist {playlist_info.name} ({playlist_id}) ===', drop_level=1)
         self.print(f'Playlist creator: {playlist_info.creator}' + (f'({playlist_info.creator_id})' if playlist_info.creator_id else ''))
         if playlist_info.release_year: self.print(f'Playlist creation year: {playlist_info.release_year}')
@@ -70,7 +70,7 @@ class Downloader:
                     spatial_codecs = self.global_settings['codecs']['spatial_codecs'],
                     proprietary_codecs = self.global_settings['codecs']['proprietary_codecs'],
                 ),
-                track_info: TrackInfo = self.loaded_modules[original_service].get_track_info(track_id, quality_tier, codec_options)
+                track_info: TrackInfo = self.loaded_modules[original_service].get_track_info(track_id, quality_tier, codec_options, **playlist_info.track_extra_kwargs)
                 
                 self.service = self.loaded_modules[custom_module]
                 self.service_name = custom_module
@@ -85,7 +85,7 @@ class Downloader:
                         self.service_name = original_service
                         self.print(f'Track {track_info.name} not found, using the original service as a fallback', drop_level=1)
                         tracks_errored.add(f'{track_info.name} - {track_info.artists[0]}')
-                        self.download_track(track_id, album_location=playlist_path, track_index=index, number_of_tracks=number_of_tracks, indent_level=2)
+                        self.download_track(track_id, album_location=playlist_path, track_index=index, number_of_tracks=number_of_tracks, indent_level=2, extra_kwargs=playlist_info.track_extra_kwargs)
                     else:
                         self.print(f'Track {track_info.name} not found, skipping')
         else:
@@ -93,17 +93,17 @@ class Downloader:
                 self.set_indent_number(2)
                 print()
                 self.print(f'Track {index}/{number_of_tracks}', drop_level=1)
-                self.download_track(track_id, album_location=playlist_path, track_index=index, number_of_tracks=number_of_tracks, indent_level=2)
+                self.download_track(track_id, album_location=playlist_path, track_index=index, number_of_tracks=number_of_tracks, indent_level=2, extra_kwargs=playlist_info.track_extra_kwargs)
 
         self.set_indent_number(1)
         self.print(f'=== Playlist {playlist_info.name} downloaded ===', drop_level=1)
 
         if tracks_errored: logging.debug('Failed tracks: ' + ', '.join(tracks_errored))
 
-    def download_album(self, album_id, artist_name='', path=None, indent_level=1):
+    def download_album(self, album_id, artist_name='', path=None, indent_level=1, extra_kwargs={}):
         self.set_indent_number(indent_level)
 
-        album_info: AlbumInfo = self.service.get_album_info(album_id)
+        album_info: AlbumInfo = self.service.get_album_info(album_id, **extra_kwargs)
         if not album_info:
             return
         number_of_tracks = len(album_info.tracks)
@@ -146,16 +146,16 @@ class Downloader:
                 self.set_indent_number(indent_level + 1)
                 print()
                 self.print(f'Track {index}/{number_of_tracks}', drop_level=1)
-                self.download_track(track_id, album_location=album_path, track_index=index, number_of_tracks=number_of_tracks, main_artist=artist_name, cover_temp_location=cover_temp_location, indent_level=indent_level+1)
+                self.download_track(track_id, album_location=album_path, track_index=index, number_of_tracks=number_of_tracks, main_artist=artist_name, cover_temp_location=cover_temp_location, indent_level=indent_level+1, extra_kwargs=album_info.track_extra_kwargs)
 
             self.set_indent_number(indent_level)
             self.print(f'=== Album {album_info.name} downloaded ===', drop_level=1)
             if cover_temp_location: silentremove(cover_temp_location)
         elif number_of_tracks == 1:
-            self.download_track(album_info.tracks[0], album_location=path, number_of_tracks=1, main_artist=artist_name, indent_level=indent_level)
+            self.download_track(album_info.tracks[0], album_location=path, number_of_tracks=1, main_artist=artist_name, indent_level=indent_level, extra_kwargs=album_info.track_extra_kwargs)
 
-    def download_artist(self, artist_id):
-        artist_info: ArtistInfo = self.service.get_artist_info(artist_id, self.global_settings['general']['artist_download_return_credited_albums'])
+    def download_artist(self, artist_id, extra_kwargs={}):
+        artist_info: ArtistInfo = self.service.get_artist_info(artist_id, self.global_settings['general']['artist_download_return_credited_albums'], **extra_kwargs)
         artist_name = artist_info.name
 
         self.set_indent_number(1)
@@ -173,24 +173,24 @@ class Downloader:
         for index, album_id in enumerate(artist_info.albums, start=1):
             print()
             self.print(f'Album {index}/{number_of_albums}', drop_level=1)
-            self.download_album(album_id, artist_name=artist_name, path=artist_path, indent_level=2)
+            self.download_album(album_id, artist_name=artist_name, path=artist_path, indent_level=2, extra_kwargs=artist_info.album_extra_kwargs)
 
         self.set_indent_number(2)
         for index, track_id in enumerate(artist_info.tracks, start=1):
             print()
             self.print(f'Track {index}/{number_of_tracks}', drop_level=1)
-            self.download_track(track_id, album_location=artist_path, main_artist=artist_name, number_of_tracks=1, indent_level=2)
+            self.download_track(track_id, album_location=artist_path, main_artist=artist_name, number_of_tracks=1, indent_level=2, extra_kwargs=artist_info.track_extra_kwargs)
 
         self.set_indent_number(1)
         self.print(f'=== Artist {artist_name} downloaded ===', drop_level=1)
 
-    def download_track(self, track_id, album_location=None, main_artist='', track_index=0, number_of_tracks=0, cover_temp_location='', indent_level=1):
+    def download_track(self, track_id, album_location=None, main_artist='', track_index=0, number_of_tracks=0, cover_temp_location='', indent_level=1, extra_kwargs={}):
         quality_tier = QualityEnum[self.global_settings['general']['download_quality'].upper()]
         codec_options = CodecOptions(
             spatial_codecs = self.global_settings['codecs']['spatial_codecs'],
             proprietary_codecs = self.global_settings['codecs']['proprietary_codecs'],
         ),
-        track_info: TrackInfo = self.service.get_track_info(track_id, quality_tier, codec_options)
+        track_info: TrackInfo = self.service.get_track_info(track_id, quality_tier, codec_options, **extra_kwargs)
         
         if main_artist.lower() not in [i.lower() for i in track_info.artists] and self.global_settings['advanced']['ignore_different_artists'] and self.download_mode is DownloadTypeEnum.artist:
            self.print('Track is not from the correct artist, skipping', drop_level=1)
@@ -235,7 +235,7 @@ class Downloader:
         else:
             album_location = album_location.replace('\\', '/')
             if track_info.tags.total_discs and track_info.tags.total_discs > 1: album_location += f'CD {track_info.tags.disc_number!s}/'
-            if album_location and os.path.exists(album_location): os.makedirs(album_location)
+            if album_location and not os.path.exists(album_location): os.makedirs(album_location)
             track_location_name = album_location + self.global_settings['formatting']['single_full_path_format'].format(**track_tags) if \
                 track_info.tags.total_tracks == 1 else album_location + self.global_settings['formatting']['track_filename_format'].format(**track_tags)
 
@@ -260,8 +260,9 @@ class Downloader:
         print()
         self.print("Downloading track file")
         try:
-            download_file(track_info.file_url, track_location, headers=track_info.file_url_headers, enable_progress_bar=True, indent_level=self.oprinter.indent_number) \
-                if track_info.download_type is DownloadEnum.URL else os.rename(self.service.get_track_tempfile(*track_info.tempfile_extra_data), track_location)
+            download_info: TrackDownloadInfo = self.service.get_track_download(**track_info.download_extra_kwargs)
+            download_file(download_info.file_url, track_location, headers=download_info.file_url_headers, enable_progress_bar=True, indent_level=self.oprinter.indent_number) \
+                if download_info.download_type is DownloadEnum.URL else os.rename(download_info.temp_file_path, track_location)
         except:
             self.print('Warning: Track download failed')
             if self.global_settings['advanced']['debug_mode']: raise
@@ -314,7 +315,7 @@ class Downloader:
             else:
                 download_file(track_info.cover_url, cover_temp_location)
                 if self.global_settings['covers']['save_external'] and ModuleModes.covers in self.module_settings[self.service_name].module_supported_modes:
-                    ext_cover_info: CoverInfo = self.service.get_track_cover(track_id, ext_cover_options)
+                    ext_cover_info: CoverInfo = self.service.get_track_cover(track_id, ext_cover_options, **track_info.cover_extra_kwargs)
                     download_file(ext_cover_info.url, f'{track_location_name}.{ext_cover_info.file_type.name}')
 
         if track_info.animated_cover_url and self.global_settings['covers']['save_animated_cover']:
@@ -345,7 +346,7 @@ class Downloader:
                 else:
                     self.print('Lyrics module could not find any lyrics.')
             elif ModuleModes.lyrics in self.module_settings[self.service_name].module_supported_modes:
-                lyrics_info: LyricsInfo = self.service.get_track_lyrics(track_id)
+                lyrics_info: LyricsInfo = self.service.get_track_lyrics(track_id, **track_info.lyrics_extra_kwargs)
                 # if lyrics_info.embedded or lyrics_info.synced:
                 #     self.print('Lyrics retrieved')
                 # else:
@@ -382,7 +383,7 @@ class Downloader:
             #     self.print('Credits module could not find any credits.')
         elif ModuleModes.credits in self.module_settings[self.service_name].module_supported_modes:
             self.print('Retrieving credits')
-            credits_list = self.service.get_track_credits(track_id)
+            credits_list = self.service.get_track_credits(track_id, **track_info.credits_extra_kwargs)
             # if credits_list:
             #     self.print('Credits retrieved')
             # else:
