@@ -7,7 +7,6 @@ from utils.utils import *
 from utils.exceptions import *
 
 
-#TODO: use stuff in https://realpython.com/python-formatted-output
 class Downloader:
     def __init__(self, settings, module_controls, path):
         self.path = path if path.endswith('/') else path + '/' 
@@ -31,7 +30,6 @@ class Downloader:
     def download_playlist(self, playlist_id, custom_module=None, extra_kwargs={}):
         self.set_indent_number(1)
 
-        # returns in form {playlist_name, playlist_creator_name, playlist_creator_id, tracks:[track_id]}
         playlist_info: PlaylistInfo = self.service.get_playlist_info(playlist_id, **extra_kwargs)
         self.print(f'=== Downloading playlist {playlist_info.name} ({playlist_id}) ===', drop_level=1)
         self.print(f'Playlist creator: {playlist_info.creator}' + (f'({playlist_info.creator_id})' if playlist_info.creator_id else ''))
@@ -264,8 +262,8 @@ class Downloader:
             download_file(download_info.file_url, track_location, headers=download_info.file_url_headers, enable_progress_bar=True, indent_level=self.oprinter.indent_number) \
                 if download_info.download_type is DownloadEnum.URL else os.rename(download_info.temp_file_path, track_location)
         except:
-            self.print('Warning: Track download failed')
             if self.global_settings['advanced']['debug_mode']: raise
+            self.print('Warning: Track download failed')
             return
 
         delete_cover = False
@@ -289,11 +287,11 @@ class Downloader:
                 cover_module = self.loaded_modules[covers_module_name]
                 rms_threshold = self.global_settings['advanced']['cover_variance_threshold']
 
-                results = self.search_by_tags(covers_module_name, track_info)
+                results: list[SearchResult] = self.search_by_tags(covers_module_name, track_info)
                 self.print('Covers to test: ' + str(len(results)))
                 attempted_urls = []
                 for i, r in enumerate(results, start=1):
-                    test_cover_info: CoverInfo = cover_module.get_track_cover(r.result_id, test_cover_options)
+                    test_cover_info: CoverInfo = cover_module.get_track_cover(r.result_id, test_cover_options, **r.extra_kwargs)
                     if test_cover_info.url not in attempted_urls:
                         attempted_urls.append(test_cover_info.url)
                         test_temp = download_to_temp(test_cover_info.url)
@@ -302,11 +300,11 @@ class Downloader:
                         self.print(f'Attempt {i} RMS: {rms!s}') # The smaller the root mean square, the closer the image is to the desired one
                         if rms < rms_threshold:
                             self.print('Match found below threshold ' + str(rms_threshold))
-                            jpg_cover_info: CoverInfo = cover_module.get_track_cover(r.result_id, jpg_cover_options)
+                            jpg_cover_info: CoverInfo = cover_module.get_track_cover(r.result_id, jpg_cover_options, **r.extra_kwargs)
                             download_file(jpg_cover_info.url, cover_temp_location)
                             silentremove(default_temp)
                             if self.global_settings['covers']['save_external']:
-                                ext_cover_info: CoverInfo = cover_module.get_track_cover(r.result_id, ext_cover_options)
+                                ext_cover_info: CoverInfo = cover_module.get_track_cover(r.result_id, ext_cover_options, **r.extra_kwargs)
                                 download_file(ext_cover_info.url, f'{track_location_name}.{ext_cover_info.file_type.name}')
                             break
                 else:
@@ -332,13 +330,15 @@ class Downloader:
                 lyrics_module = self.loaded_modules[lyrics_module_name]
 
                 if lyrics_module_name != self.service_name:
-                    results = self.search_by_tags(lyrics_module_name, track_info)
+                    results: list[SearchResult] = self.search_by_tags(lyrics_module_name, track_info)
                     lyrics_track_id = results[0].result_id if len(results) else None
+                    extra_kwargs = results[0].extra_kwargs if len(results) else None
                 else:
                     lyrics_track_id = track_id
+                    extra_kwargs = {}
                 
                 if lyrics_track_id:
-                    lyrics_info: LyricsInfo = lyrics_module.get_track_lyrics(lyrics_track_id)
+                    lyrics_info: LyricsInfo = lyrics_module.get_track_lyrics(lyrics_track_id, **extra_kwargs)
                     # if lyrics_info.embedded or lyrics_info.synced:
                     #     self.print('Lyrics retrieved')
                     # else:
@@ -368,13 +368,15 @@ class Downloader:
             credits_module = self.loaded_modules[credits_module_name]
 
             if credits_module_name != self.service_name:
-                results = self.search_by_tags(credits_module_name, track_info)
+                results: list[SearchResult] = self.search_by_tags(credits_module_name, track_info)
                 credits_track_id = results[0].result_id if len(results) else None
+                extra_kwargs = results[0].extra_kwargs if len(results) else None
             else:
                 credits_track_id = track_id
+                extra_kwargs = {}
             
             if credits_track_id:
-                credits_list = credits_module.get_track_credits(credits_track_id)
+                credits_list = credits_module.get_track_credits(credits_track_id, **extra_kwargs)
                 # if credits_list:
                 #     self.print('Credits retrieved')
                 # else:

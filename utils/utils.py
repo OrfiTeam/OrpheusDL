@@ -20,12 +20,13 @@ def create_requests_session():
         return session_
 
 sanitise_name = lambda name : re.sub(r'[:]', ' - ', re.sub(r'[\\\/*?"<>|$]', '', str(name)))
+r_session = create_requests_session()
 
 def download_file(url, file_location, headers={}, enable_progress_bar=False, indent_level=0):
     if os.path.isfile(file_location):
         return None
 
-    r = requests.get(url, stream=True, headers=headers, verify=False)
+    r = r_session.get(url, stream=True, headers=headers, verify=False)
     with open(file_location, 'wb') as f:
         if 'content-length' in r.headers:
             total = int(r.headers['content-length'])
@@ -75,18 +76,16 @@ def silentremove(filename):
 def read_temporary_setting(settings_location, module, root_setting=None, setting=None, global_mode=False):
     temporary_settings = pickle.load(open(settings_location, 'rb'))
     module_settings = temporary_settings['modules'][module] if module in temporary_settings['modules'] else None
-
+    
     if module_settings:
         if global_mode:
-            if not 'global' in module_settings['sessions']:
-                module_settings['sessions']['global'] = {}
-            session = module_settings['sessions']['global']
+            session = module_settings
         else:
             session = module_settings['sessions'][module_settings['selected']]
     else:
         session = None
 
-    if root_setting and session:
+    if session and root_setting:
         if setting:
             return session[root_setting][setting] if root_setting in session and setting in session[root_setting] else None
         else:
@@ -102,9 +101,7 @@ def set_temporary_setting(settings_location, module, root_setting, setting=None,
 
     if module_settings:
         if global_mode:
-            if not 'global' in module_settings['sessions']:
-                module_settings['sessions']['global'] = {}
-            session = module_settings['sessions']['global']
+            session = module_settings
         else:
             session = module_settings['sessions'][module_settings['selected']]
     else:

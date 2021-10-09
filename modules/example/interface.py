@@ -86,9 +86,9 @@ class ModuleInterface:
             sample_rate = 44.1, # optional
             bitrate = 1411, # optional
             download_extra_data = {'file_url': '', 'codec': ''}, # optional only if download_type isn't DownloadEnum.TEMP_FILE_PATH, whatever you want
-            cover_extra_kwargs = {'cover_info': ''}, # optional, whatever you want
-            credits_extra_kwargs = {'credits': ''}, # optional, whatever you want
-            lyrics_extra_kwargs = {'lyrics': ''}, # optional, whatever you want
+            cover_extra_kwargs = {'data': {track_id: ''}}, # optional, whatever you want, but be very careful
+            credits_extra_kwargs = {'data': {track_id: ''}}, # optional, whatever you want, but be very careful
+            lyrics_extra_kwargs = {'data': {track_id: ''}}, # optional, whatever you want, but be very careful
             error = '' # only use if there is an error
         )
 
@@ -148,17 +148,20 @@ class ModuleInterface:
             track_extra_kwargs = {'data': ''} # optional, whatever you want
         )
 
-    def get_track_credits(self, track_id: str, credits=None): # Mandatory if ModuleModes.credits
-        if not credits: credits = self.session.get_track(track_id)['credits']
+    def get_track_credits(self, track_id: str, data={}): # Mandatory if ModuleModes.credits
+        track_data = data[track_id] if track_id in data else self.session.get_track(track_id)
+        credits = track_data['credits']
         credits_dict = {}
         return [CreditsInfo(k, v) for k, v in credits_dict.items()]
     
-    def get_track_cover(self, track_id: str, cover_options: CoverOptions, cover_info=None) -> CoverInfo: # Mandatory if ModuleModes.covers
-        if not cover_info: cover_info = self.session.get_track(track_id)['cover']
+    def get_track_cover(self, track_id: str, cover_options: CoverOptions, data={}) -> CoverInfo: # Mandatory if ModuleModes.covers
+        track_data = data[track_id] if track_id in data else self.session.get_track(track_id)
+        cover_info = track_data['cover']
         return CoverInfo(url='', file_type=ImageFileTypeEnum.jpg)
-    
-    def get_track_lyrics(self, track_id: str, lyrics=None) -> LyricsInfo: # Mandatory if ModuleModes.lyrics
-        if not lyrics: lyrics = self.session.get_track(track_id)['cover']
+
+    def get_track_lyrics(self, track_id: str, data={}) -> LyricsInfo: # Mandatory if ModuleModes.lyrics
+        track_data = data[track_id] if track_id in data else self.session.get_track(track_id)
+        lyrics = track_data['lyrics']
         return LyricsInfo(embedded='', synced='') # both optional if not found
 
     def search(self, query_type: DownloadTypeEnum, query: str, track_info: TrackInfo = None, limit: int = 10): # Mandatory
@@ -175,5 +178,9 @@ class ModuleInterface:
                 year = '', # optional
                 explicit = False, # optional
                 additional = [], # optional, used to convey more info when using orpheus.py search (not luckysearch, for obvious reasons)
-                extra_kwargs = {'data': {i['id']: i}} # optional, whatever you want
+                extra_kwargs = {'data': {i['id']: i}} # optional, whatever you want. NOTE: BE CAREFUL! this can be given to:
+                # get_track_info, get_album_info, get_artist_info with normal search results, and
+                # get_track_credits, get_track_cover, get_track_lyrics in the case of other modules using this module just for those.
+                # therefore, it's recommended to choose something generic like 'data' rather than specifics like 'cover_info'
+                # or, you could use both, keeping a data field just in case track data is given, while keeping the specifics, but that's overcomplicated
             ) for i in results]

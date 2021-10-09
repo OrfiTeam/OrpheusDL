@@ -31,6 +31,7 @@ class Orpheus:
 
         self.default_global_settings = {
             "general": {
+                "artist_download_return_credited_albums": True,
                 "download_path": "./downloads/",
                 "download_quality": "hifi"
             },
@@ -264,7 +265,7 @@ class Orpheus:
         if not ('advancedmode' in sessions and 'modules' in sessions and sessions['advancedmode'] == advanced_login_mode):
             sessions = {'advancedmode': advanced_login_mode, 'modules':{}}
 
-        # in format {advancedmode, modules: {modulename: {default, type, custom_global, sessions: [sessionname: {##}]}}}
+        # in format {advancedmode, modules: {modulename: {default, type, custom_data, sessions: [sessionname: {##}]}}}
         # where ## is 'custom_session' plus if jwt 'access, refresh' (+ emailhash in simple)
         # in the special case of simple mode, session is always called default
         new_module_sessions = {}
@@ -272,9 +273,9 @@ class Orpheus:
             # Clear storage if type changed
             new_module_sessions[i] = sessions['modules'][i] if i in sessions['modules'] else {'selected':'default', 'sessions':{'default':{}}}
 
-            if self.module_settings[i].global_storage_variables: new_module_sessions[i]['custom_global'] = \
-                {j:new_module_sessions[i][j] for j in self.module_settings[i].global_storage_variables \
-                    if 'custom_global' in new_module_sessions[i] and j in new_module_sessions[i]['custom_global'] and not clear_session}
+            if self.module_settings[i].global_storage_variables: new_module_sessions[i]['custom_data'] = \
+                {j:new_module_sessions[i]['custom_data'][j] for j in self.module_settings[i].global_storage_variables \
+                    if 'custom_data' in new_module_sessions[i] and j in new_module_sessions[i]['custom_data']}
             
             for current_session in new_module_sessions[i]['sessions'].values():
                 # For simple login type only, as it does not apply to advanced login
