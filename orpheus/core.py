@@ -92,7 +92,11 @@ class Orpheus:
 
         if not os.path.exists('config'): os.makedirs('config')
         self.settings = json.loads(open(self.settings_location, 'r').read()) if os.path.exists(self.settings_location) else {}
-        if self.settings['global']['advanced']['debug_mode']: logging.basicConfig(level=logging.DEBUG)
+
+        try:
+            if self.settings['global']['advanced']['debug_mode']: logging.basicConfig(level=logging.DEBUG)
+        except KeyError:
+            pass
 
         if not os.path.exists('extensions'): os.makedirs('extensions')
         for extension in os.listdir('extensions'):  # Loading extensions
