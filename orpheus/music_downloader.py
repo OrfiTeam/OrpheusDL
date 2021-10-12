@@ -152,8 +152,10 @@ class Downloader:
         elif number_of_tracks == 1:
             self.download_track(album_info.tracks[0], album_location=path, number_of_tracks=1, main_artist=artist_name, indent_level=indent_level, extra_kwargs=album_info.track_extra_kwargs)
 
+        return album_info.tracks
+
     def download_artist(self, artist_id, extra_kwargs={}):
-        artist_info: ArtistInfo = self.service.get_artist_info(artist_id, self.global_settings['general']['artist_download_return_credited_albums'], **extra_kwargs)
+        artist_info: ArtistInfo = self.service.get_artist_info(artist_id, self.global_settings['artist_downloading']['return_credited_albums'], **extra_kwargs)
         artist_name = artist_info.name
 
         self.set_indent_number(1)
@@ -168,18 +170,24 @@ class Downloader:
         artist_path = self.path + artist_name + '/'
 
         self.set_indent_number(2)
+        tracks_downloaded = []
         for index, album_id in enumerate(artist_info.albums, start=1):
             print()
             self.print(f'Album {index}/{number_of_albums}', drop_level=1)
-            self.download_album(album_id, artist_name=artist_name, path=artist_path, indent_level=2, extra_kwargs=artist_info.album_extra_kwargs)
+            tracks_downloaded += self.download_album(album_id, artist_name=artist_name, path=artist_path, indent_level=2, extra_kwargs=artist_info.album_extra_kwargs)
 
         self.set_indent_number(2)
-        for index, track_id in enumerate(artist_info.tracks, start=1):
+        skip_tracks = self.global_settings['artist_downloading']['separate_tracks_skip_downloaded']
+        tracks_to_download = [i for i in artist_info.tracks if (i not in tracks_downloaded and skip_tracks) or not skip_tracks]
+        number_of_tracks_new = len(tracks_to_download)
+        for index, track_id in enumerate(tracks_to_download, start=1):
             print()
-            self.print(f'Track {index}/{number_of_tracks}', drop_level=1)
+            self.print(f'Track {index}/{number_of_tracks_new}', drop_level=1)
             self.download_track(track_id, album_location=artist_path, main_artist=artist_name, number_of_tracks=1, indent_level=2, extra_kwargs=artist_info.track_extra_kwargs)
 
         self.set_indent_number(1)
+        tracks_skipped = number_of_tracks - number_of_tracks_new
+        if tracks_skipped > 0: self.print(f'Tracks skipped: {tracks_skipped!s}', drop_level=1)
         self.print(f'=== Artist {artist_name} downloaded ===', drop_level=1)
 
     def download_track(self, track_id, album_location=None, main_artist='', track_index=0, number_of_tracks=0, cover_temp_location='', indent_level=1, extra_kwargs={}):

@@ -31,9 +31,12 @@ class Orpheus:
 
         self.default_global_settings = {
             "general": {
-                "artist_download_return_credited_albums": True,
                 "download_path": "./downloads/",
                 "download_quality": "hifi"
+            },
+            "artist_downloading":{
+                "return_credited_albums": True,
+                "separate_tracks_skip_downloaded": True
             },
             "formatting": {
                 "album_format": "{name}{explicit}",
