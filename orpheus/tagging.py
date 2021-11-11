@@ -8,7 +8,7 @@ from mutagen.oggopus import OggOpus
 from mutagen.oggvorbis import OggVorbis
 from mutagen.mp4 import MP4Cover
 from mutagen.mp4 import MP4Tags
-from mutagen.id3 import PictureType
+from mutagen.id3 import PictureType, APIC, USLT
 from PIL import Image
 
 from utils.models import ContainerEnum, TrackInfo
@@ -29,6 +29,10 @@ def tag_file(file_path: str, image_path: str, track_info: TrackInfo, credits_lis
         tagger = OggVorbis(file_path)
     elif container == ContainerEnum.mp3:
         tagger = EasyMP3(file_path)
+        # Register rating and encoded tag
+        tagger.tags.RegisterTextKey('encoded', 'TSSE')
+        del tagger.tags['encoded']
+        tagger.tags.RegisterTXXXKey('RATING', 'Rating')
     elif container == ContainerEnum.m4a:
         tagger = EasyMP4(file_path)
         # Register ISRC, lyrics, cover and explicit tags
@@ -46,7 +50,7 @@ def tag_file(file_path: str, image_path: str, track_info: TrackInfo, credits_lis
         tagger['albumartist'] = track_info.tags.album_artist
 
     # Only tested for FLAC and MPEG-4
-    if container == ContainerEnum.m4a or container == ContainerEnum.flac:
+    if container in {ContainerEnum.m4a, ContainerEnum.flac, ContainerEnum.mp3}:
         tagger['artist'] = track_info.artists
     else:
         tagger['artist'] = track_info.artists[0]
@@ -78,11 +82,13 @@ def tag_file(file_path: str, image_path: str, track_info: TrackInfo, credits_lis
     if track_info.explicit is not None:
         if container == ContainerEnum.m4a:
             tagger['explicit'] = b'\x01' if track_info.explicit else b'\x02'
-        elif container != ContainerEnum.mp3:
+        elif container == ContainerEnum.mp3:
+            tagger['Rating'] = 'Explicit' if track_info.explicit else 'Clean'
+        else:
             tagger['Rating'] = 'Explicit' if track_info.explicit else 'Clean'
 
     if track_info.tags.genres:
-        tagger['genre'] = track_info.tags.genres[0] # TODO: all of them
+        tagger['genre'] = track_info.tags.genres[0]  # TODO: all of them
 
     if track_info.tags.isrc:
         if container == ContainerEnum.m4a:
@@ -90,13 +96,19 @@ def tag_file(file_path: str, image_path: str, track_info: TrackInfo, credits_lis
         else:
             tagger['isrc'] = track_info.tags.isrc
 
-    # Need to change to merge dupicate credits automatically, or switch to plain dicts instead of list[dataclass] which is currently pointless
+    # Need to change to merge duplicate credits automatically, or switch to plain dicts instead of list[dataclass]
+    # which is currently pointless
     if credits_list:
         if container == ContainerEnum.m4a:
             for credit in credits_list:
                 # Create a new freeform atom and set the contributors in bytes
                 tagger.RegisterTextKey(credit.type, '----:com.apple.itunes:' + credit.type)
                 tagger[credit.type] = [con.encode() for con in credit.names]
+        elif container == ContainerEnum.mp3:
+            for credit in credits_list:
+                # Create a new user-defined text frame key
+                tagger.tags.RegisterTXXXKey(credit.type.upper(), credit.type)
+                tagger[credit.type] = credit.names
         else:
             for credit in credits_list:
                 try:
@@ -105,7 +117,15 @@ def tag_file(file_path: str, image_path: str, track_info: TrackInfo, credits_lis
                     pass
 
     if embedded_lyrics:
-       tagger['lyrics'] = embedded_lyrics
+        if container == ContainerEnum.mp3:
+            # Never access protected attributes, too bad! I hope I never have to write ID3 code again
+            tagger.tags._EasyID3__id3._DictProxy__dict['USLT'] = USLT(
+                encoding=3,
+                lang=u'eng',  # don't assume?
+                text=embedded_lyrics
+            )
+        else:
+            tagger['lyrics'] = embedded_lyrics
 
     if track_info.tags.replay_gain and track_info.tags.replay_peak and container != ContainerEnum.m4a:
         tagger['REPLAYGAIN_TRACK_GAIN'] = str(track_info.tags.replay_gain)
@@ -126,8 +146,14 @@ def tag_file(file_path: str, image_path: str, track_info: TrackInfo, credits_lis
         elif container == ContainerEnum.m4a:
             tagger['covr'] = [MP4Cover(data, imageformat=MP4Cover.FORMAT_JPEG)]
         elif container == ContainerEnum.mp3:
-            # tagger.add(id3.APIC(encoding=3, mime='image/jpeg', type=3, desc=u'Cover', data=data))
-            pass
+            # Never access protected attributes, too bad!
+            tagger.tags._EasyID3__id3._DictProxy__dict['APIC'] = APIC(
+                encoding=3,  # UTF-8
+                mime='image/jpeg',
+                type=3,  # album art
+                desc='Cover',  # name
+                data=data
+            )
         # If you want to have a cover in only a few applications, then this technically works for Opus
         elif container == ContainerEnum.ogg or container == ContainerEnum.opus:
             im = Image.open(image_path)
@@ -146,7 +172,7 @@ def tag_file(file_path: str, image_path: str, track_info: TrackInfo, credits_lis
               'Track will not have cover saved.'.format(picture._MAX_SIZE / 1024 ** 2))
 
     try:
-        tagger.save(file_path)
+        tagger.save(file_path, v2_version=3, v23_sep=None) if container == ContainerEnum.mp3 else tagger.save(file_path)
     except:
         logging.debug('Tagging failed.')
         tag_text = '\n'.join((f'{k}: {v}' for k, v in asdict(track_info.tags).items() if v and k != 'credits' and k != 'lyrics'))
