@@ -3,7 +3,7 @@
 import argparse, re
 from urllib.parse import urlparse
 
-from orpheus.core import *
+from orpheusdl.core import *
 
 
 def main():
@@ -195,10 +195,12 @@ def main():
 
         orpheus_core_download(orpheus, media_to_download, tpm, sdm, path)
 
-
-if __name__ == "__main__":
+def run():
     try:
         main()
     except KeyboardInterrupt:
         print('\n\t^C pressed - abort')
         exit()
+
+if __name__ == "__main__":
+    run()

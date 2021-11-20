@@ -1,10 +1,12 @@
-import importlib, json, logging, os, pickle, requests, urllib3, base64, shutil
+import importlib, json, logging, os, pickle, requests, urllib3, base64, shutil, pkgutil
 from datetime import datetime
 
-from orpheus.music_downloader import Downloader
-from utils.models import *
-from utils.utils import *
-from utils.exceptions import *
+from orpheusdl.music_downloader import Downloader
+from orpheusdl.utils.models import *
+from orpheusdl.utils.utils import *
+from orpheusdl.utils.exceptions import *
+
+from appdirs import AppDirs
 
 os.environ['CURL_CA_BUNDLE'] = ''  # Hack to disable SSL errors for requests module for easier debugging
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)  # Make SSL warnings hidden
@@ -27,7 +29,13 @@ def true_current_utc_timestamp():
 
 class Orpheus:
     def __init__(self, private_mode=False):
-        self.extensions, self.extension_list, self.module_list, self.module_settings, self.module_netloc_constants, self.loaded_modules = {}, set(), set(), {}, {}, {}
+        self.extensions = {}
+        self.extension_list = set()
+        self.module_list = set()
+        self.module_packages = {}
+        self.module_settings = {}
+        self.module_netloc_constants = {}
+        self.loaded_modules = {}
 
         self.default_global_settings = {
             "general": {
@@ -87,18 +95,33 @@ class Orpheus:
             }
         }
 
-        self.settings_location = 'config/settings.json'
-        self.session_storage_location = 'config/loginstorage.bin'
+        dirs = AppDirs('orpheusdl', 'orpheusdl')
 
-        if not os.path.exists('config'): os.makedirs('config')
-        self.settings = json.loads(open(self.settings_location, 'r').read()) if os.path.exists(self.settings_location) else {}
+        if os.path.isfile('./config/settings.json'):
+            self.settings_location = './config/settings.json'
+        else:
+            os.makedirs(dirs.user_config_dir, exist_ok=True)
+            self.settings_location = os.path.join(dirs.user_config_dir, 'settings.json')
+        print(f'Using settings file at {self.settings_location}')
+
+        if os.path.isfile('./config/loginstorage.bin'):
+            self.session_storage_location = 'config/loginstorage.bin'
+        else:
+            os.makedirs(dirs.user_cache_dir, exist_ok=True)
+            self.session_storage_location = os.path.join(dirs.user_cache_dir, 'loginstorage.bin')
+
+        try:
+            with open(self.settings_location, 'rb') as fp:
+                self.settings = json.load(fp)
+        except FileNotFoundError:
+            self.settings = {}
 
         try:
             if self.settings['global']['advanced']['debug_mode']: logging.basicConfig(level=logging.DEBUG)
         except KeyError:
             pass
 
-        if not os.path.exists('extensions'): os.makedirs('extensions')
+        os.makedirs('extensions', exist_ok=True)
         for extension in os.listdir('extensions'):  # Loading extensions
             if os.path.isdir(f'extensions/{extension}') and os.path.exists(f'extensions/{extension}/interface.py'):
                 class_ = getattr(importlib.import_module(f'extensions.{extension}.interface'), 'OrpheusExtension', None)
@@ -109,21 +132,34 @@ class Orpheus:
                     raise Exception('Error loading extension: "{extension}"')
 
         # Module preparation (not loaded yet for performance purposes)
-        if not os.path.exists('modules'): os.makedirs('modules')
-        module_list = [module.lower() for module in os.listdir('modules') if os.path.exists(f'modules/{module}/interface.py')]
-        if not module_list or module_list == ['example']:
+
+        # Load modules from installed packages matching "orpheusdl_module_*"
+        module_packages = [
+            module_package for _, module_package, _ in pkgutil.iter_modules() if module_package.startswith('orpheusdl_module_')
+        ]
+
+        # Load modules from the local "modules" directory
+        os.makedirs('modules', exist_ok=True)
+        module_packages.extend(f"modules.{module}" for module in os.listdir('modules') if os.path.exists(f'modules/{module}/interface.py'))
+
+        if not module_packages or set(module_packages) == {"modules.example"}:
             print('No modules are installed, quitting')
             exit()
-        logging.debug('Orpheus: Modules detected: ' + ", ".join(module_list))
+        logging.debug('Orpheus: Modules detected: ' + ", ".join(module_packages))
 
-        for module in module_list:  # Loading module information into module_settings
-            module_information: ModuleInformation = getattr(importlib.import_module(f'modules.{module}.interface'), 'module_information', None)
+        for module_package in module_packages:  # Loading module information into module_settings
+            module_information: ModuleInformation = getattr(importlib.import_module(f'{module_package}.interface'), 'module_information', None)
             if module_information and not ModuleFlags.private in module_information.flags and not private_mode:
-                self.module_list.add(module)
-                self.module_settings[module] = module_information
-                logging.debug(f'Orpheus: {module} added as a module')
+                if module_information.name:
+                    module_name = module_information.name
+                else:
+                    module_name = module_package.split(".")[-1].split("_")[-1]
+                self.module_list.add(module_name)
+                self.module_packages[module_name] = module_package
+                self.module_settings[module_name] = module_information
+                logging.debug(f'Orpheus: {module_name} added as a module')
             else:
-                raise Exception(f'Error loading module information from module: "{module}"') # TODO: replace with InvalidModuleError
+                raise Exception(f'Error loading module information from module: "{module_package}"') # TODO: replace with InvalidModuleError
 
         duplicates = set()
         for module in self.module_list: # Detecting duplicate url constants
@@ -161,7 +197,8 @@ class Orpheus:
         if module not in self.module_list:
             raise Exception(f'"{module}" does not exist in modules.') # TODO: replace with InvalidModuleError
         if module not in self.loaded_modules:
-            class_ = getattr(importlib.import_module(f'modules.{module}.interface'), 'ModuleInterface', None)
+            module_package = self.module_packages[module]
+            class_ = getattr(importlib.import_module(f'{module_package}.interface'), 'ModuleInterface', None)
             if class_:
                 class ModuleError(Exception): # TODO: get rid of this, as it is deprecated
                     def __init__(self, message):
@@ -267,7 +304,14 @@ class Orpheus:
         new_settings['modules'] = module_settings
 
         ## Sessions
-        sessions = pickle.load(open(self.session_storage_location, 'rb')) if os.path.exists(self.session_storage_location) else {}
+        try:
+            sessions = pickle.load(open(self.session_storage_location, 'rb'))
+        except FileNotFoundError:
+            sessions = {}
+        except Exception:
+            print("Session store was invalid, resetting sessions.")
+            sessions = {}
+
 
         if not ('advancedmode' in sessions and 'modules' in sessions and sessions['advancedmode'] == advanced_login_mode):
             sessions = {'advancedmode': advanced_login_mode, 'modules':{}}

@@ -11,8 +11,8 @@ from mutagen.mp4 import MP4Tags
 from mutagen.id3 import PictureType, APIC, USLT
 from PIL import Image
 
-from utils.models import ContainerEnum, TrackInfo
-from utils.exceptions import *
+from orpheusdl.utils.models import ContainerEnum, TrackInfo
+from orpheusdl.utils.exceptions import *
 
 # Needed for Windows tagging support
 MP4Tags._padding = 0

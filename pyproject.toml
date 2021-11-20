@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "orpheusdl"
+version = "0.1.0"
+description = "A modular music archival program"
+authors = ["yarrm80s", "Dniel97"]
+
+[tool.poetry.scripts]
+orpheus = "orpheusdl.orpheus:run"
+
+[tool.poetry.dependencies]
+python = "^3.7"
+defusedxml = "^0.7.1"
+protobuf = "^3.19.1"
+pycryptodomex = "^3.11.0"
+requests = "^2.26.0"
+Pillow = "^8.4.0"
+tqdm = "^4.62.3"
+mutagen = "^1.45.1"
+ffmpeg-python = "^0.2.0"
+appdirs = "^1.4.4"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

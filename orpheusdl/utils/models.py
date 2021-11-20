@@ -3,7 +3,7 @@ from enum import Flag, auto
 from types import ClassMethodDescriptorType, FunctionType
 from typing import Optional
 
-from utils.utils import read_temporary_setting, set_temporary_setting
+from orpheusdl.utils.utils import read_temporary_setting, set_temporary_setting
 
 
 class CodecEnum(Flag):
@@ -108,6 +108,7 @@ class ManualEnum(Flag):
 class ModuleInformation:
     service_name: str
     module_supported_modes: ModuleModes
+    name: Optional[str] = None
     global_settings: Optional[dict] = field(default_factory=dict)
     global_storage_variables: Optional[list] = None
     session_settings: Optional[dict] = field(default_factory=dict)

@@ -1,8 +1,9 @@
-from utils.models import *
-from utils.utils import create_temp_filename
+from orpheusdl.utils.models import *
+from orpheusdl.utils.utils import create_temp_filename
 
 
 module_information = ModuleInformation( # Only service_name and module_supported_modes are mandatory
+    name = 'example',
     service_name = 'Example',
     module_supported_modes = ModuleModes.download | ModuleModes.lyrics | ModuleModes.covers | ModuleModes.credits,
     flags = ModuleFlags.hidden,

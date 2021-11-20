@@ -1,10 +1,10 @@
 import logging, os, ffmpeg
 from dataclasses import asdict
 
-from orpheus.tagging import tag_file
-from utils.models import *
-from utils.utils import *
-from utils.exceptions import *
+from orpheusdl.tagging import tag_file
+from orpheusdl.utils.models import *
+from orpheusdl.utils.utils import *
+from orpheusdl.utils.exceptions import *
 
 
 class Downloader:

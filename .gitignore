@@ -9,3 +9,4 @@ temp/
 .python-version
 modules/
 extensions/
+dist/

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse, cProfile, pstats
-from orpheus.core import Orpheus
+from orpheusdl.core import Orpheus
 
 def main():
     parser = argparse.ArgumentParser(description='Orpheus Module Testing Tool')
