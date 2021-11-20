@@ -1,9 +1,36 @@
+import os
 from dataclasses import dataclass, field
 from enum import Flag, auto
 from types import ClassMethodDescriptorType, FunctionType
 from typing import Optional
 
 from utils.utils import read_temporary_setting, set_temporary_setting
+
+
+# Best place to put the class, due to circular imports...
+class Oprinter:  # Could change to inherit from print class instead, but this is fine
+    def __init__(self):
+        self.indent_number = 1
+        self.printing_enabled = True
+        self.multiplier = 8
+
+    def set_indent_number(self, number: int):
+        try:
+            size = os.get_terminal_size().columns
+            if 60 < size < 80:
+                self.multiplier = int((size - 60)/2.5)
+            elif size < 60:
+                self.multiplier = 0
+            else:
+                self.multiplier = 8
+        except:
+            self.multiplier = 8
+
+        self.indent_number = number * self.multiplier
+
+    def oprint(self, input: str, drop_level: int = 0):
+        if self.printing_enabled:
+            print(' ' * (self.indent_number - drop_level * self.multiplier) + input)
 
 
 class CodecEnum(Flag):
@@ -19,12 +46,14 @@ class CodecEnum(Flag):
     EAC3 = auto()  # Specifically E-AC-3 JOC # Lossy, proprietary, spatial
     AC4 = auto()  # Specifically AC-4 IMS # Lossy, proprietary, spatial
 
+
 class ContainerEnum(Flag):
     flac = auto()
     opus = auto()
     ogg = auto()
     m4a = auto()
     mp3 = auto()
+
 
 @dataclass
 class SearchResult:
@@ -36,6 +65,7 @@ class SearchResult:
     additional: Optional[list] = None
     extra_kwargs: Optional[dict] = field(default_factory=dict)
 
+
 @dataclass
 class CodecData:
     pretty_name: str
@@ -43,6 +73,7 @@ class CodecData:
     lossless: bool
     spatial: bool
     proprietary: bool
+
 
 codec_data = {
     CodecEnum.FLAC:   CodecData(pretty_name='FLAC',       container=ContainerEnum.flac, lossless=True,  spatial=False, proprietary=False),
@@ -56,11 +87,14 @@ codec_data = {
     CodecEnum.MHA1:   CodecData(pretty_name='MPEG-H 3D',  container=ContainerEnum.m4a,  lossless=False, spatial=True,  proprietary=False),
     CodecEnum.EAC3:   CodecData(pretty_name='E-AC-3 JOC', container=ContainerEnum.m4a,  lossless=False, spatial=True,  proprietary=True),
     CodecEnum.AC4:    CodecData(pretty_name='AC-4 IMS',   container=ContainerEnum.m4a,  lossless=False, spatial=True,  proprietary=True)
-} # Note: spatial has priority over proprietary when deciding if a codec is enabled
+}  # Note: spatial has priority over proprietary when deciding if a codec is enabled
+
 
 class DownloadEnum(Flag):
     URL = auto()
-    TEMP_FILE_PATH = auto() # Specifically designed for use with protected streams
+    TEMP_FILE_PATH = auto()  # Specifically designed for use with protected streams
+    MPD = auto()
+
 
 class TemporarySettingsController:
     def __init__(self, module: str, settings_location: str):
@@ -87,11 +121,13 @@ class TemporarySettingsController:
         else:
             raise Exception('Invalid temporary setting requested')
 
+
 class ModuleFlags(Flag):
     startup_load = auto()
     hidden = auto()
     enable_jwt_system = auto()
     private = auto()
+
 
 class ModuleModes(Flag):
     download = auto()
@@ -100,9 +136,11 @@ class ModuleModes(Flag):
     credits = auto()
     covers = auto()
 
+
 class ManualEnum(Flag):
     orpheus = auto()
     manual = auto()
+
 
 @dataclass
 class ModuleInformation:
@@ -119,10 +157,12 @@ class ModuleInformation:
     url_decoding: Optional[ManualEnum] = ManualEnum.orpheus
     login_behaviour: Optional[ManualEnum] = ManualEnum.orpheus
 
+
 @dataclass
 class ExtensionInformation:
     extension_type: str
     settings: dict
+
 
 @dataclass
 class DownloadTypeEnum(Flag):
@@ -131,11 +171,13 @@ class DownloadTypeEnum(Flag):
     artist = auto()
     album = auto()
 
+
 @dataclass
 class MediaIdentification:
     media_type: DownloadTypeEnum
     media_id: str
     extra_kwargs: Optional[dict] = field(default_factory=dict)
+
 
 class QualityEnum(Flag):
     LOW = auto()
@@ -144,19 +186,23 @@ class QualityEnum(Flag):
     LOSSLESS = auto()
     HIFI = auto()
 
+
 @dataclass
 class CodecOptions:
     proprietary_codecs: bool
     spatial_codecs: bool
+
 
 class ImageFileTypeEnum(Flag):
     jpg = auto()
     png = auto()
     webp = auto()
 
+
 class CoverCompressionEnum(Flag):
     low = auto()
     high = auto()
+
 
 @dataclass
 class CoverOptions:
@@ -164,12 +210,14 @@ class CoverOptions:
     resolution: int
     compression: CoverCompressionEnum
 
+
 @dataclass
 class OrpheusOptions:
     debug_mode: bool
     disable_subscription_check: bool
-    quality_tier: QualityEnum # Here because of subscription checking
+    quality_tier: QualityEnum  # Here because of subscription checking
     default_cover_options: CoverOptions
+
 
 @dataclass
 class ModuleController:
@@ -178,7 +226,9 @@ class ModuleController:
     temporary_settings_controller: TemporarySettingsController
     orpheus_options: OrpheusOptions
     get_current_timestamp: FunctionType
-    module_error: ClassMethodDescriptorType # DEPRECATED
+    printer_controller: Oprinter
+    module_error: ClassMethodDescriptorType  # DEPRECATED
+
 
 @dataclass
 class Tags:
@@ -195,21 +245,25 @@ class Tags:
     replay_peak: Optional[float] = None
     genres: Optional[list] = None
 
+
 @dataclass
 class CoverInfo:
     url: str
     file_type: ImageFileTypeEnum
+
 
 @dataclass
 class LyricsInfo:
     embedded: Optional[str] = None
     synced: Optional[str] = None
 
+
 # TODO: get rid of CreditsInfo!
 @dataclass
 class CreditsInfo:
     type: str
     names: list
+
 
 @dataclass
 class AlbumInfo:
@@ -227,6 +281,7 @@ class AlbumInfo:
     animated_cover_url: Optional[str] = None
     track_extra_kwargs: Optional[dict] = field(default_factory=dict)
 
+
 @dataclass
 class ArtistInfo:
     name: str
@@ -234,6 +289,7 @@ class ArtistInfo:
     album_extra_kwargs: Optional[dict] = field(default_factory=dict)
     tracks: Optional[list] = field(default_factory=list)
     track_extra_kwargs: Optional[dict] = field(default_factory=dict)
+
 
 @dataclass
 class PlaylistInfo:
@@ -247,6 +303,7 @@ class PlaylistInfo:
     cover_type: Optional[ImageFileTypeEnum] = ImageFileTypeEnum.jpg
     animated_cover_url: Optional[str] = None
     track_extra_kwargs: Optional[dict] = field(default_factory=dict)
+
 
 @dataclass
 class TrackInfo:
@@ -269,6 +326,7 @@ class TrackInfo:
     credits_extra_kwargs: Optional[dict] = field(default_factory=dict)
     lyrics_extra_kwargs: Optional[dict] = field(default_factory=dict)
     error: Optional[str] = None
+
 
 @dataclass
 class TrackDownloadInfo:

@@ -8,7 +8,7 @@ from utils.exceptions import *
 
 
 class Downloader:
-    def __init__(self, settings, module_controls, path):
+    def __init__(self, settings, module_controls, oprinter, path):
         self.path = path if path.endswith('/') else path + '/' 
         self.third_party_modules = None
         self.download_mode = None
@@ -20,7 +20,7 @@ class Downloader:
         self.load_module = module_controls['module_loader']
         self.global_settings = settings
 
-        self.oprinter = Oprinter()
+        self.oprinter = oprinter
         self.print = self.oprinter.oprint
         self.set_indent_number = self.oprinter.set_indent_number
 
@@ -450,27 +450,3 @@ class Downloader:
         if delete_cover: silentremove(cover_temp_location)
         
         self.print(f'=== Track {track_id} downloaded ===', drop_level=1)
-
-
-class Oprinter: # Could change to inherit from print class instead, but this is fine
-    def __init__(self):
-        self.indent_number = 1
-        self.printing_enabled = True
-
-    def set_indent_number(self, number: int):
-        try:
-            size = os.get_terminal_size().columns
-            if 60 < size < 80:
-                self.multiplier = int((size - 60)/2.5)
-            elif size < 60:
-                self.multiplier = 0
-            else:
-                self.multiplier = 8
-        except:
-            self.multiplier = 8
-
-        self.indent_number = number * self.multiplier
-
-    def oprint(self, input: str, drop_level: int = 0):
-        if self.printing_enabled:
-            print(' ' * (self.indent_number - drop_level * self.multiplier) + input)

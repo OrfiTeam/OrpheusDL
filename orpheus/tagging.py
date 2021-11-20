@@ -49,7 +49,7 @@ def tag_file(file_path: str, image_path: str, track_info: TrackInfo, credits_lis
     if track_info.tags.album_artist:
         tagger['albumartist'] = track_info.tags.album_artist
 
-    # Only tested for FLAC and MPEG-4
+    # Only tested for MPEG-4, FLAC and MP3
     if container in {ContainerEnum.m4a, ContainerEnum.flac, ContainerEnum.mp3}:
         tagger['artist'] = track_info.artists
     else:

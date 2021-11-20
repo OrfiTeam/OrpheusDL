@@ -20,6 +20,9 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)  # Make SSL 
 #     print('System time is incorrect, using online time to correct it for subscription expiry checks')
 
 timestamp_correction_term = 0
+# Use the same Oprinter class inside "Downloader" "and "ModuleController"
+oprinter = Oprinter()
+
 
 def true_current_utc_timestamp():
     return int(datetime.utcnow().timestamp()) + timestamp_correction_term
@@ -173,6 +176,7 @@ class Orpheus:
                     temporary_settings_controller = TemporarySettingsController(module, self.session_storage_location),
                     module_error = ModuleError, # DEPRECATED
                     get_current_timestamp = true_current_utc_timestamp,
+                    printer_controller = oprinter,
                     orpheus_options = OrpheusOptions(
                         debug_mode = self.settings['global']['advanced']['debug_mode'],
                         quality_tier = QualityEnum[self.settings['global']['general']['download_quality'].upper()],
@@ -326,7 +330,7 @@ class Orpheus:
 
 
 def orpheus_core_download(orpheus_session: Orpheus, media_to_download, third_party_modules, separate_download_module, output_path):
-    downloader = Downloader(orpheus_session.settings['global'], orpheus_session.module_controls, output_path)
+    downloader = Downloader(orpheus_session.settings['global'], orpheus_session.module_controls, oprinter, output_path)
     if not os.path.exists('temp'): os.makedirs('temp')
 
     for mainmodule, items in media_to_download.items():
