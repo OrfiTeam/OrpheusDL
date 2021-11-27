@@ -278,6 +278,7 @@ class AlbumInfo:
     quality: Optional[str] = None
     booklet_url: Optional[str] = None
     cover_url: Optional[str] = None
+    upc: Optional[str] = None
     cover_type: Optional[ImageFileTypeEnum] = ImageFileTypeEnum.jpg
     all_track_cover_jpg_url: Optional[str] = None
     animated_cover_url: Optional[str] = None
