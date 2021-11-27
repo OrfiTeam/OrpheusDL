@@ -208,7 +208,10 @@ def tag_file(file_path: str, image_path: str, track_info: TrackInfo, credits_lis
               'Track will not have cover saved.'.format(picture._MAX_SIZE / 1024 ** 2))
 
     try:
-        tagger.save(file_path, v2_version=3, v23_sep=None) if container == ContainerEnum.mp3 else tagger.save(file_path)
+        if container == ContainerEnum.mp3:
+            tagger.save(file_path, v1=2, v2_version=3, v23_sep=None)
+        else:
+            tagger.save(file_path)
     except:
         logging.debug('Tagging failed.')
         tag_text = '\n'.join((f'{k}: {v}' for k, v in asdict(track_info.tags).items() if v and k != 'credits' and k != 'lyrics'))
