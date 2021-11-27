@@ -8,7 +8,7 @@ from mutagen.oggopus import OggOpus
 from mutagen.oggvorbis import OggVorbis
 from mutagen.mp4 import MP4Cover
 from mutagen.mp4 import MP4Tags
-from mutagen.id3 import PictureType, APIC, USLT
+from mutagen.id3 import PictureType, APIC, USLT, TDRL
 from PIL import Image
 
 from utils.models import ContainerEnum, TrackInfo
@@ -29,10 +29,15 @@ def tag_file(file_path: str, image_path: str, track_info: TrackInfo, credits_lis
         tagger = OggVorbis(file_path)
     elif container == ContainerEnum.mp3:
         tagger = EasyMP3(file_path)
-        # Register rating and encoded tag
+
+        # Register encoded, rating, compatible_brands, major_brand and minor_version
         tagger.tags.RegisterTextKey('encoded', 'TSSE')
-        del tagger.tags['encoded']
+        tagger.tags.RegisterTXXXKey('compatible_brands', 'compatible_brands')
+        tagger.tags.RegisterTXXXKey('major_brand', 'major_brand')
+        tagger.tags.RegisterTXXXKey('minor_version', 'minor_version')
         tagger.tags.RegisterTXXXKey('RATING', 'Rating')
+
+        del tagger.tags['encoded']
     elif container == ContainerEnum.m4a:
         tagger = EasyMP4(file_path)
         # Register ISRC, lyrics, cover and explicit tags
@@ -42,6 +47,16 @@ def tag_file(file_path: str, image_path: str, track_info: TrackInfo, credits_lis
         tagger.RegisterTextKey('lyrics', '\xa9lyr') if embedded_lyrics else None
     else:
         raise Exception('Unknown container for tagging')
+
+    # Remove all useless MPEG-DASH ffmpeg tags
+    if 'major_brand' in tagger.tags:
+        del tagger.tags['major_brand']
+    if 'minor_version' in tagger.tags:
+        del tagger.tags['minor_version']
+    if 'compatible_brands' in tagger.tags:
+        del tagger.tags['compatible_brands']
+    if 'encoder' in tagger.tags:
+        del tagger.tags['encoder']
 
     tagger['title'] = track_info.name
     if track_info.album:
@@ -74,7 +89,16 @@ def tag_file(file_path: str, image_path: str, track_info: TrackInfo, credits_lis
         if track_info.tags.total_discs:
             tagger['totaldiscs'] = str(track_info.tags.total_discs)
 
-    tagger['date'] = str(track_info.release_year)
+    if track_info.tags.release_date:
+        if container == ContainerEnum.mp3:
+            # Never access protected attributes, too bad! Only works on ID3v2.4, disabled for now!
+            # tagger.tags._EasyID3__id3._DictProxy__dict['TDRL'] = TDRL(encoding=3, text=track_info.tags.release_date)
+            # Fall back to the YEAR tag
+            tagger['date'] = str(track_info.release_year)
+        else:
+            tagger['date'] = track_info.tags.release_date
+    else:
+        tagger['date'] = str(track_info.release_year)
 
     if track_info.tags.copyright:
         tagger['copyright'] = track_info.tags.copyright

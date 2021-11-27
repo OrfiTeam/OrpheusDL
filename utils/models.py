@@ -244,6 +244,8 @@ class Tags:
     replay_gain: Optional[float] = None
     replay_peak: Optional[float] = None
     genres: Optional[list] = None
+    # Use YYYY-MM-DD for consistency
+    release_date: Optional[str] = None
 
 
 @dataclass
