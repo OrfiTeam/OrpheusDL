@@ -217,5 +217,5 @@ def tag_file(file_path: str, image_path: str, track_info: TrackInfo, credits_lis
         tag_text = '\n'.join((f'{k}: {v}' for k, v in asdict(track_info.tags).items() if v and k != 'credits' and k != 'lyrics'))
         tag_text += '\n\ncredits:\n    ' + '\n    '.join(f'{credit.type}: {", ".join(credit.names)}' for credit in credits_list if credit.names) if credits_list else ''
         tag_text += '\n\nlyrics:\n    ' + '\n    '.join(embedded_lyrics.split('\n')) if embedded_lyrics else ''
-        open(file_path.rsplit('.', 1)[0] + '_tags.txt', 'w').write(tag_text)
+        open(file_path.rsplit('.', 1)[0] + '_tags.txt', 'w', encoding='utf-8').write(tag_text)
         raise TagSavingFailure

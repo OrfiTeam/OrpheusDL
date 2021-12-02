@@ -365,7 +365,7 @@ class Downloader:
             if lyrics_info.synced and self.global_settings['lyrics']['save_synced_lyrics']:
                 lrc_location = f'{track_location_name}.lrc'
                 if not os.path.isfile(lrc_location):
-                    with open(lrc_location, 'w') as f:
+                    with open(lrc_location, 'w', encoding='utf-8') as f:
                         f.write(lyrics_info.synced)
 
         # Get credits
