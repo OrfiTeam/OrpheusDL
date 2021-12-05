@@ -49,10 +49,6 @@ Follow these steps to get a local copy of Orpheus up and running:
       ```shell
       git clone https://github.com/yarrm80s/orpheusdl.git
       ```
-   * Or with all modules
-      ```shell
-      git clone --recurse-submodules https://github.com/yarrm80s/orpheusdl.git
-      ```
 2. Install all requirements
    ```shell
    pip install -r requirements.txt
@@ -67,14 +63,14 @@ Follow these steps to get a local copy of Orpheus up and running:
 ## Usage
 
 Just call `orpheus.py` with any link you want to archive, for example Qobuz:
-    ```shell
-    python3 orpheus.py https://open.qobuz.com/album/c9wsrrjh49ftb
-    ```
+```shell
+python3 orpheus.py https://open.qobuz.com/album/c9wsrrjh49ftb
+```
 
 Alternatively do a search (luckysearch to automatically select the first option):
-    ```shell
-    python3 orpheus.py search qobuz track darkside alan walker
-    ```
+```shell
+python3 orpheus.py search qobuz track darkside alan walker
+```
 
 <!-- CONFIGURATION -->
 ## Configuration
@@ -93,10 +89,11 @@ for instance {artist}/{album}.
 
 #### Format variables
 
-`track_format` variables are `{title}`, `{artist}`, `{album_artist}`, `{album}`, `{track_number}`,
-`{total_tracks}`, `{disc_number}`, `{total_discs}`, `{date}`, `{isrc}`, `{explicit}`.
+`track_format` variables are `{name}`, `{album}`, `{album_artist}`, `{album_id}`, `{track_number}`,
+`{total_tracks}`, `{disc_number}`, `{total_discs}`, `{release_date}`, `{release_year}`, `{artist_id}`, `{isrc}`,
+`{upc}`, `{explicit}`.
 
-`album_format` variables are `{album_name}`, `{artist_name}`, `{artist_id}`, `{album_year}`, `{explicit}`, `{quality}`.
+`album_format` variables are `{name}`, `{artist}`, `{artist_id}`, `{release_year}`, `{UPC}`, `{explicit}`, `{quality}`.
 
 <!-- Contact -->
 ## Contact

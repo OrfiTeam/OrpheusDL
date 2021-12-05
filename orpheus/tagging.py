@@ -1,6 +1,7 @@
 import base64, logging
 from dataclasses import asdict
 
+from mutagen.easyid3 import EasyID3
 from mutagen.easymp4 import EasyMP4
 from mutagen.flac import FLAC, Picture
 from mutagen.mp3 import EasyMP3
@@ -28,6 +29,10 @@ def tag_file(file_path: str, image_path: str, track_info: TrackInfo, credits_lis
     elif container == ContainerEnum.mp3:
         tagger = EasyMP3(file_path)
 
+        # Add EasyID3 tags if none are present (Soundcloud)
+        if tagger.tags is None:
+            tagger.tags = EasyID3()
+
         # Register encoded, rating, barcode, compatible_brands, major_brand and minor_version
         tagger.tags.RegisterTextKey('encoded', 'TSSE')
         tagger.tags.RegisterTXXXKey('compatible_brands', 'compatible_brands')
@@ -36,7 +41,8 @@ def tag_file(file_path: str, image_path: str, track_info: TrackInfo, credits_lis
         tagger.tags.RegisterTXXXKey('Rating', 'RATING')
         tagger.tags.RegisterTXXXKey('upc', 'BARCODE')
 
-        del tagger.tags['encoded']
+        # Delete the encoded tag if present
+        if 'encoded' in tagger.tags: del tagger.tags['encoded']
     elif container == ContainerEnum.m4a:
         tagger = EasyMP4(file_path)
         # Register ISRC, lyrics, cover and explicit tags
@@ -49,11 +55,10 @@ def tag_file(file_path: str, image_path: str, track_info: TrackInfo, credits_lis
         raise Exception('Unknown container for tagging')
 
     # Remove all useless MPEG-DASH ffmpeg tags
-    if tagger.tags is not None:
-        if 'major_brand' in tagger.tags: del tagger.tags['major_brand']
-        if 'minor_version' in tagger.tags: del tagger.tags['minor_version']
-        if 'compatible_brands' in tagger.tags: del tagger.tags['compatible_brands']
-        if 'encoder' in tagger.tags: del tagger.tags['encoder']
+    if 'major_brand' in tagger.tags: del tagger.tags['major_brand']
+    if 'minor_version' in tagger.tags: del tagger.tags['minor_version']
+    if 'compatible_brands' in tagger.tags: del tagger.tags['compatible_brands']
+    if 'encoder' in tagger.tags: del tagger.tags['encoder']
 
     tagger['title'] = track_info.name
     if track_info.album: tagger['album'] = track_info.album
