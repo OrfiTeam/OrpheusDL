@@ -1,4 +1,4 @@
-import logging, os, ffmpeg
+import logging, os, ffmpeg, sys
 from dataclasses import asdict
 
 from orpheus.tagging import tag_file
@@ -32,7 +32,7 @@ class Downloader:
 
         playlist_info: PlaylistInfo = self.service.get_playlist_info(playlist_id, **extra_kwargs)
         self.print(f'=== Downloading playlist {playlist_info.name} ({playlist_id}) ===', drop_level=1)
-        self.print(f'Playlist creator: {playlist_info.creator}' + (f'({playlist_info.creator_id})' if playlist_info.creator_id else ''))
+        self.print(f'Playlist creator: {playlist_info.creator}' + (f' ({playlist_info.creator_id})' if playlist_info.creator_id else ''))
         if playlist_info.release_year: self.print(f'Playlist creation year: {playlist_info.release_year}')
         number_of_tracks = len(playlist_info.tracks)
         self.print(f'Number of tracks: {number_of_tracks!s}')
@@ -41,7 +41,7 @@ class Downloader:
         playlist_tags = {k: sanitise_name(v) for k, v in asdict(playlist_info).items()}
         playlist_tags['explicit'] = ' [E]' if playlist_info.explicit else ''
         playlist_path = self.path + self.global_settings['formatting']['playlist_format'].format(**playlist_tags) + '/'
-        if not os.path.exists(playlist_path): os.makedirs(playlist_path)
+        os.makedirs(playlist_path, exist_ok=True)
         
         if playlist_info.cover_url:
             self.print('Downloading playlist cover')
@@ -50,6 +50,9 @@ class Downloader:
         if playlist_info.animated_cover_url and self.global_settings['covers']['save_animated_cover']:
             self.print('Downloading animated playlist cover')
             download_file(playlist_info.animated_cover_url, playlist_path + 'Cover.mp4', enable_progress_bar=True)
+        
+        if playlist_info.description:
+            with open(playlist_path + 'Description.txt', 'w', encoding='utf-8') as f: f.write(playlist_info.description)
 
         tracks_errored = set()
         if custom_module:
@@ -67,7 +70,7 @@ class Downloader:
                 codec_options = CodecOptions(
                     spatial_codecs = self.global_settings['codecs']['spatial_codecs'],
                     proprietary_codecs = self.global_settings['codecs']['proprietary_codecs'],
-                ),
+                )
                 track_info: TrackInfo = self.loaded_modules[original_service].get_track_info(track_id, quality_tier, codec_options, **playlist_info.track_extra_kwargs)
                 
                 self.service = self.loaded_modules[custom_module]
@@ -76,7 +79,7 @@ class Downloader:
                 track_id = results[0].result_id if len(results) else None
                 
                 if track_id:
-                    self.download_track(track_id, album_location=playlist_path, track_index=index, number_of_tracks=number_of_tracks, indent_level=2)
+                    self.download_track(track_id, album_location=playlist_path, track_index=index, number_of_tracks=number_of_tracks, indent_level=2, extra_kwargs=results[0].extra_kwargs)
                 else:
                     if ModuleModes.download in self.module_settings[original_service].module_supported_modes:
                         self.service = self.loaded_modules[original_service]
@@ -113,7 +116,7 @@ class Downloader:
             album_tags['quality'] = f' [{album_info.quality}]' if album_info.quality else ''
             album_tags['explicit'] = ' [E]' if album_info.explicit else ''
             album_path = path + self.global_settings['formatting']['album_format'].format(**album_tags) + '/'
-            if not os.path.exists(album_path): os.makedirs(album_path)
+            os.makedirs(album_path, exist_ok=True)
         
             if self.download_mode is DownloadTypeEnum.album:
                 self.set_indent_number(1)
@@ -139,6 +142,9 @@ class Downloader:
             if album_info.animated_cover_url and self.global_settings['covers']['save_animated_cover']:
                 self.print('Downloading animated album cover')
                 download_file(album_info.animated_cover_url, album_path + 'Cover.mp4', enable_progress_bar=True)
+
+            if album_info.description:
+                with open(album_path + 'Description.txt', 'w', encoding='utf-8') as f: f.write(album_info.description) # Also add support for this with singles maybe?
 
             for index, track_id in enumerate(album_info.tracks, start=1):
                 self.set_indent_number(indent_level + 1)
@@ -213,6 +219,7 @@ class Downloader:
         zfill_enabled, zfill_list = self.global_settings['formatting']['enable_zfill'], ['track_number', 'total_tracks', 'disc_number', 'total_discs']
         track_tags = {k: (zfill_lambda(v) if zfill_enabled and k in zfill_list else sanitise_name(v)) for k, v in {**asdict(track_info.tags), **asdict(track_info)}.items()}
         track_tags['explicit'] = '[E]' if track_info.explicit else ''
+        track_tags['artist'] = track_info.artists[0] # if len(track_info.artists) == 1 else 'Various Artists'
         codec = track_info.codec
 
         self.set_indent_number(indent_level)
@@ -232,16 +239,17 @@ class Downloader:
         # Check if track_info returns error, display it and return this function to not download the track
         if track_info.error:
             self.print(track_info.error)
+            self.print(f'=== Track {track_id} failed ===', drop_level=1)
             return
 
         if self.download_mode is DownloadTypeEnum.track:
             track_location_name = self.path + self.global_settings['formatting']['single_full_path_format'].format(**track_tags)
             track_folder = track_location_name[:track_location_name.rfind('/')]
-            if not os.path.exists(track_folder): os.makedirs(track_folder)
+            os.makedirs(track_folder, exist_ok=True)
         else:
             album_location = album_location.replace('\\', '/')
             if track_info.tags.total_discs and track_info.tags.total_discs > 1: album_location += f'CD {track_info.tags.disc_number!s}/'
-            if album_location and not os.path.exists(album_location): os.makedirs(album_location)
+            if album_location: os.makedirs(album_location, exist_ok=True)
             track_location_name = album_location + self.global_settings['formatting']['single_full_path_format'].format(**track_tags) if \
                 track_info.tags.total_tracks == 1 else album_location + self.global_settings['formatting']['track_filename_format'].format(**track_tags)
 
@@ -262,6 +270,9 @@ class Downloader:
             self.print(f'=== Track {track_id} skipped ===', drop_level=1)
             return
 
+        if track_info.description:
+            with open(track_location_name + '.txt', 'w', encoding='utf-8') as f: f.write(track_info.description)
+
         # Begin process
         print()
         self.print("Downloading track file")
@@ -271,7 +282,8 @@ class Downloader:
                 if download_info.download_type is DownloadEnum.URL else os.rename(download_info.temp_file_path, track_location)
         except:
             if self.global_settings['advanced']['debug_mode']: raise
-            self.print('Warning: Track download failed')
+            self.print('Warning: Track download failed: ' + str(sys.exc_info()[1]))
+            self.print(f'=== Track {track_id} failed ===', drop_level=1)
             return
 
         delete_cover = False

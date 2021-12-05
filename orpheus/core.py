@@ -20,7 +20,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)  # Make SSL 
 #     print('System time is incorrect, using online time to correct it for subscription expiry checks')
 
 timestamp_correction_term = 0
-# Use the same Oprinter class inside "Downloader" "and "ModuleController"
+# Use the same Oprinter instance wherever it's needed
 oprinter = Oprinter()
 
 
@@ -93,7 +93,7 @@ class Orpheus:
         self.settings_location = 'config/settings.json'
         self.session_storage_location = 'config/loginstorage.bin'
 
-        if not os.path.exists('config'): os.makedirs('config')
+        os.makedirs('config', exist_ok=True)
         self.settings = json.loads(open(self.settings_location, 'r').read()) if os.path.exists(self.settings_location) else {}
 
         try:
@@ -101,7 +101,7 @@ class Orpheus:
         except KeyError:
             pass
 
-        if not os.path.exists('extensions'): os.makedirs('extensions')
+        os.makedirs('extensions', exist_ok=True)
         for extension in os.listdir('extensions'):  # Loading extensions
             if os.path.isdir(f'extensions/{extension}') and os.path.exists(f'extensions/{extension}/interface.py'):
                 class_ = getattr(importlib.import_module(f'extensions.{extension}.interface'), 'OrpheusExtension', None)
@@ -112,7 +112,7 @@ class Orpheus:
                     raise Exception('Error loading extension: "{extension}"')
 
         # Module preparation (not loaded yet for performance purposes)
-        if not os.path.exists('modules'): os.makedirs('modules')
+        os.makedirs('modules', exist_ok=True)
         module_list = [module.lower() for module in os.listdir('modules') if os.path.exists(f'modules/{module}/interface.py')]
         if not module_list or module_list == ['example']:
             print('No modules are installed, quitting')
@@ -131,17 +131,19 @@ class Orpheus:
         duplicates = set()
         for module in self.module_list: # Detecting duplicate url constants
             module_info: ModuleInformation = self.module_settings[module]
-            url_constant = module_info.netlocation_constant
-            if url_constant:
-                if url_constant not in self.module_netloc_constants:
-                    self.module_netloc_constants[url_constant] = module
+            url_constants = module_info.netlocation_constant
+            if not isinstance(url_constants, list): url_constants = [str(url_constants)]
+            for constant in url_constants:
+                if constant.startswith('setting.'): constant = self.settings['modules'][module][constant.split('setting.')[1]]
+                
+                if constant not in self.module_netloc_constants:
+                    self.module_netloc_constants[constant] = module
                 elif ModuleFlags.private in module_info.flags: # Replacing public modules with private ones
-                    if ModuleFlags.private in self.module_settings[url_constant].flags: duplicates.add(url_constant)
+                    if ModuleFlags.private in self.module_settings[constant].flags: duplicates.add(constant)
                 else:
-                    duplicates.add(url_constant)
-        
-        if duplicates:
-            raise Exception('Multiple modules installed that connect to the same service names: ' + ', '.join(duplicates))
+                    duplicates.add(sorted([module, self.module_netloc_constants[constant]]))
+            
+        if duplicates: raise Exception('Multiple modules installed that connect to the same service names: ' + ', '.join(' and '.join(duplicates)))
 
         self.update_module_storage()
 
@@ -196,15 +198,18 @@ class Orpheus:
                 settings = self.settings['modules'][module] if module in self.settings['modules'] else {}
                 temporary_session = read_temporary_setting(self.session_storage_location, module)
                 if self.module_settings[module].login_behaviour is ManualEnum.orpheus:
-                    username = settings['email'] if 'email' in settings else settings['username'] 
                     # Login if simple mode, username login and requested by update_setting_storage
                     if temporary_session and temporary_session['clear_session'] and not self.settings['global']['advanced']['advanced_login_system']:
-                        username = settings['email'] if 'email' in settings else settings['username']
-                        emailhash = hash_string(username)
-                        if temporary_session['emailhash'] != emailhash:
+                        hashes = {k:hash_string(v) for k,v in settings.items()}
+                        if not temporary_session.get('hashes') or \
+                            any(k not in hashes or hashes[k] != v for k,v in temporary_session['hashes'].items() if k in self.module_settings[module].session_settings):
                             print('Logging into ' + self.module_settings[module].service_name)
-                            loaded_module.login(username, settings['password'])
-                            set_temporary_setting(self.session_storage_location, module, 'emailhash', None, emailhash)
+                            try:
+                                loaded_module.login(settings['email'] if 'email' in settings else settings['username'], settings['password'])
+                            except:
+                                set_temporary_setting(self.session_storage_location, module, 'hashes', None, {})
+                                raise
+                            set_temporary_setting(self.session_storage_location, module, 'hashes', None, hashes)
                     if ModuleFlags.enable_jwt_system in self.module_settings[module].flags and temporary_session and \
                             temporary_session['refresh'] and not temporary_session['bearer']:
                         loaded_module.refresh_login()
@@ -290,15 +295,14 @@ class Orpheus:
             
             for current_session in new_module_sessions[i]['sessions'].values():
                 # For simple login type only, as it does not apply to advanced login
-                clear_session = False
-
                 if self.module_settings[i].login_behaviour is ManualEnum.orpheus and not advanced_login_mode:
-                    username = module_settings[i]['email'] if 'email' in module_settings[i] else module_settings[i]['username']
-                    if ('emailhash' in current_session and current_session['emailhash'] != hash_string(username)) or ('emailhash' not in current_session):
-                        current_session['emailhash'] = ''
-                        # Clears email if its hash does not match stored value
+                    hashes = {k:hash_string(v) for k,v in module_settings[i].items()}
+                    if current_session.get('hashes'):
+                        clear_session = any(k not in hashes or hashes[k] != v for k,v in current_session['hashes'].items() if k in self.module_settings[i].session_settings)
+                    else:
                         clear_session = True
-
+                else:
+                    clear_session = False
                 current_session['clear_session'] = clear_session
 
                 if ModuleFlags.enable_jwt_system in self.module_settings[i].flags:
@@ -331,7 +335,7 @@ class Orpheus:
 
 def orpheus_core_download(orpheus_session: Orpheus, media_to_download, third_party_modules, separate_download_module, output_path):
     downloader = Downloader(orpheus_session.settings['global'], orpheus_session.module_controls, oprinter, output_path)
-    if not os.path.exists('temp'): os.makedirs('temp')
+    os.makedirs('temp', exist_ok=True)
 
     for mainmodule, items in media_to_download.items():
         for media in items:
@@ -377,6 +381,5 @@ def orpheus_core_download(orpheus_session: Orpheus, media_to_download, third_par
                     downloader.download_artist(media_id, extra_kwargs=media.extra_kwargs)
                 else:
                     raise Exception(f'\tUnknown media type "{mediatype}"')
-            print()
 
     if os.path.exists('temp'): shutil.rmtree('temp')

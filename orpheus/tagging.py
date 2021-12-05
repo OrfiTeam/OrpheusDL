@@ -19,8 +19,6 @@ MP4Tags._padding = 0
 
 
 def tag_file(file_path: str, image_path: str, track_info: TrackInfo, credits_list: list, embedded_lyrics: str, container: ContainerEnum):
-    # TODO: eliminate tags already in track info
-    
     if container == ContainerEnum.flac:
         tagger = FLAC(file_path)
     elif container == ContainerEnum.opus:
@@ -52,26 +50,17 @@ def tag_file(file_path: str, image_path: str, track_info: TrackInfo, credits_lis
 
     # Remove all useless MPEG-DASH ffmpeg tags
     if tagger.tags is not None:
-        if 'major_brand' in tagger.tags:
-            del tagger.tags['major_brand']
-        if 'minor_version' in tagger.tags:
-            del tagger.tags['minor_version']
-        if 'compatible_brands' in tagger.tags:
-            del tagger.tags['compatible_brands']
-        if 'encoder' in tagger.tags:
-            del tagger.tags['encoder']
+        if 'major_brand' in tagger.tags: del tagger.tags['major_brand']
+        if 'minor_version' in tagger.tags: del tagger.tags['minor_version']
+        if 'compatible_brands' in tagger.tags: del tagger.tags['compatible_brands']
+        if 'encoder' in tagger.tags: del tagger.tags['encoder']
 
     tagger['title'] = track_info.name
-    if track_info.album:
-        tagger['album'] = track_info.album
-    if track_info.tags.album_artist:
-        tagger['albumartist'] = track_info.tags.album_artist
+    if track_info.album: tagger['album'] = track_info.album
+    if track_info.tags.album_artist: tagger['albumartist'] = track_info.tags.album_artist
 
     # Only tested for MPEG-4, FLAC and MP3
-    if container in {ContainerEnum.m4a, ContainerEnum.flac, ContainerEnum.mp3}:
-        tagger['artist'] = track_info.artists
-    else:
-        tagger['artist'] = track_info.artists[0]
+    tagger['artist'] = track_info.artists if container in {ContainerEnum.m4a, ContainerEnum.flac, ContainerEnum.mp3} else track_info.artists[0]
 
     if container == ContainerEnum.m4a or container == ContainerEnum.mp3:
         if track_info.tags.track_number and track_info.tags.total_tracks:
@@ -83,14 +72,10 @@ def tag_file(file_path: str, image_path: str, track_info: TrackInfo, credits_lis
         elif track_info.tags.disc_number:
             tagger['discnumber'] = str(track_info.tags.disc_number)
     else:
-        if track_info.tags.track_number:
-            tagger['tracknumber'] = str(track_info.tags.track_number)
-        if track_info.tags.disc_number:
-            tagger['discnumber'] = str(track_info.tags.disc_number)
-        if track_info.tags.total_tracks:
-            tagger['totaltracks'] = str(track_info.tags.total_tracks)
-        if track_info.tags.total_discs:
-            tagger['totaldiscs'] = str(track_info.tags.total_discs)
+        if track_info.tags.track_number: tagger['tracknumber'] = str(track_info.tags.track_number)
+        if track_info.tags.disc_number: tagger['discnumber'] = str(track_info.tags.disc_number)
+        if track_info.tags.total_tracks: tagger['totaltracks'] = str(track_info.tags.total_tracks)
+        if track_info.tags.total_discs: tagger['totaldiscs'] = str(track_info.tags.total_discs)
 
     if track_info.tags.release_date:
         if container == ContainerEnum.mp3:
@@ -106,8 +91,7 @@ def tag_file(file_path: str, image_path: str, track_info: TrackInfo, credits_lis
     else:
         tagger['date'] = str(track_info.release_year)
 
-    if track_info.tags.copyright:
-        tagger['copyright'] = track_info.tags.copyright
+    if track_info.tags.copyright:tagger['copyright'] = track_info.tags.copyright
 
     if track_info.explicit is not None:
         if container == ContainerEnum.m4a:
@@ -117,23 +101,11 @@ def tag_file(file_path: str, image_path: str, track_info: TrackInfo, credits_lis
         else:
             tagger['Rating'] = 'Explicit' if track_info.explicit else 'Clean'
 
-    if track_info.tags.genres:
-        tagger['genre'] = track_info.tags.genres[0]  # TODO: all of them
-
-    if track_info.tags.isrc:
-        if container == ContainerEnum.m4a:
-            tagger['isrc'] = track_info.tags.isrc.encode()
-        else:
-            tagger['isrc'] = track_info.tags.isrc
-
-    if track_info.tags.upc:
-        if container == ContainerEnum.m4a:
-            tagger['UPC'] = track_info.tags.upc.encode()
-        else:
-            tagger['UPC'] = track_info.tags.upc
+    if track_info.tags.genres: tagger['genre'] = track_info.tags.genres[0]  # TODO: all of them
+    if track_info.tags.isrc: tagger['isrc'] = track_info.tags.isrc.encode() if container == ContainerEnum.m4a else track_info.tags.isrc
+    if track_info.tags.upc: tagger['UPC'] = track_info.tags.upc.encode() if container == ContainerEnum.m4a else track_info.tags.upc
 
     # Need to change to merge duplicate credits automatically, or switch to plain dicts instead of list[dataclass]
-    # which is currently pointless
     if credits_list:
         if container == ContainerEnum.m4a:
             for credit in credits_list:
@@ -167,9 +139,7 @@ def tag_file(file_path: str, image_path: str, track_info: TrackInfo, credits_lis
         tagger['REPLAYGAIN_TRACK_GAIN'] = str(track_info.tags.replay_gain)
         tagger['REPLAYGAIN_TRACK_PEAK'] = str(track_info.tags.replay_peak)
 
-    with open(image_path, 'rb') as c:
-        data = c.read()
-
+    with open(image_path, 'rb') as c: data = c.read()
     picture = Picture()
     picture.data = data
 
@@ -202,16 +172,10 @@ def tag_file(file_path: str, image_path: str, track_info: TrackInfo, credits_lis
             picture.depth = 24
             encoded_data = base64.b64encode(picture.write())
             tagger['metadata_block_picture'] = [encoded_data.decode('ascii')]
-
     else:
-        print('\tCover file size is too large, only {0:.2f}MB are allowed. '
-              'Track will not have cover saved.'.format(picture._MAX_SIZE / 1024 ** 2))
-
+        print(f'\tCover file size is too large, only {(picture._MAX_SIZE / 1024 ** 2):.2f}MB are allowed. Track will not have cover saved.')
     try:
-        if container == ContainerEnum.mp3:
-            tagger.save(file_path, v1=2, v2_version=3, v23_sep=None)
-        else:
-            tagger.save(file_path)
+        tagger.save(file_path, v1=2, v2_version=3, v23_sep=None) if container == ContainerEnum.mp3 else tagger.save()
     except:
         logging.debug('Tagging failed.')
         tag_text = '\n'.join((f'{k}: {v}' for k, v in asdict(track_info.tags).items() if v and k != 'credits' and k != 'lyrics'))

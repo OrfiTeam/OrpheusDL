@@ -73,7 +73,7 @@ class ModuleInterface:
         return TrackInfo(
             name = '',
             album_id = '',
-            album_name = '',
+            album = '',
             artists = [''],
             tags = tags,
             codec = CodecEnum.FLAC,
@@ -82,10 +82,11 @@ class ModuleInterface:
             explicit = False,
             artist_id = '', # optional
             animated_cover_url = '', # optional
+            description = '', # optional
             bit_depth = 16, # optional
             sample_rate = 44.1, # optional
             bitrate = 1411, # optional
-            download_extra_data = {'file_url': '', 'codec': ''}, # optional only if download_type isn't DownloadEnum.TEMP_FILE_PATH, whatever you want
+            download_extra_kwargs = {'file_url': '', 'codec': ''}, # optional only if download_type isn't DownloadEnum.TEMP_FILE_PATH, whatever you want
             cover_extra_kwargs = {'data': {track_id: ''}}, # optional, whatever you want, but be very careful
             credits_extra_kwargs = {'data': {track_id: ''}}, # optional, whatever you want, but be very careful
             lyrics_extra_kwargs = {'data': {track_id: ''}}, # optional, whatever you want, but be very careful
@@ -117,6 +118,7 @@ class ModuleInterface:
             cover_type = ImageFileTypeEnum.jpg, # optional
             all_track_cover_jpg_url = '', # technically optional, but HIGHLY recommended
             animated_cover_url = '', # optional
+            description = '', # optional
             track_extra_kwargs = {'data': ''} # optional, whatever you want
         )
 
@@ -133,6 +135,7 @@ class ModuleInterface:
             cover_url = '', # optional
             cover_type = ImageFileTypeEnum.jpg, # optional
             animated_cover_url = '', # optional
+            description = '', # optional
             track_extra_kwargs = {'data': ''} # optional, whatever you want
         )
 
@@ -173,8 +176,8 @@ class ModuleInterface:
 
         return [SearchResult(
                 result_id = '',
-                name = '', # optional, only if a lyrics/covers only module
-                artists = [], # optional, only if a lyrics/covers only module or an artist search
+                name = '', # optional only if a lyrics/covers only module
+                artists = [], # optional only if a lyrics/covers only module or an artist search
                 year = '', # optional
                 explicit = False, # optional
                 additional = [], # optional, used to convey more info when using orpheus.py search (not luckysearch, for obvious reasons)

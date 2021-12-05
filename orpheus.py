@@ -40,7 +40,10 @@ def main():
     orpheus_mode = args.arguments[0].lower()
     if orpheus_mode == 'settings': # These should call functions in a separate py file, that does not yet exist
         setting = args.arguments[1].lower()
-        if setting == 'core_update':  # Updates only Orpheus
+        if setting == 'refresh':
+            print('settings.json has been refreshed successfully.')
+            return # Actually the only one that should genuinely return here after doing nothing
+        elif setting == 'core_update':  # Updates only Orpheus
             return  # TODO
         elif setting == 'full_update':  # Updates Orpheus and all modules
             return  # TODO
@@ -89,10 +92,10 @@ def main():
             raise Exception(f'Unknown module {module}') # TODO: replace with InvalidModuleError
     else:
         path = args.output if args.output else orpheus.settings['global']['general']['download_path']
-        path = path[:-1] if path[-1] == '/' else path  # removes '/' from end if it exists
-        os.mkdir(path) if not os.path.exists(path) else None
+        if path[-1] == '/': path = path[:-1]  # removes '/' from end if it exists
+        os.makedirs(path, exist_ok=True)
 
-        media_types = '/'.join(e.name for e in DownloadTypeEnum)
+        media_types = '/'.join(i.name for i in DownloadTypeEnum)
 
         if orpheus_mode == 'search' or orpheus_mode == 'luckysearch':
             if len(args.arguments) > 3:
@@ -106,7 +109,7 @@ def main():
                     
                     query = ' '.join(args.arguments[3:])
                     module = orpheus.load_module(modulename)
-                    items = module.search(query_type, query, limit=10)
+                    items = module.search(query_type, query, limit = (1 if lucky_mode else 10))
                     if len(items) == 0:
                         raise Exception(f'No search results for {query_type.name}: {query}')
 
@@ -122,7 +125,12 @@ def main():
                                 print(f'{str(index)}. {item.name} - {", ".join(artists)} {additional_details}')
                             else:
                                 print(f'{str(index)}. {item.name} {additional_details}')
-                        selection = int(input('Selection: '))-1
+                        
+                        selection_input = input('Selection: ')
+                        if selection_input.lower() in ['e', 'q', 'x', 'exit', 'quit']: exit()
+                        if not selection_input.isdigit(): raise Exception('Input a number')
+                        selection = int(selection_input)-1
+                        if selection < 0 or selection >= len(items): raise Exception('Invalid selection')
                         print()
                     selected_item: SearchResult = items[selection]
                     media_to_download = {modulename: [MediaIdentification(media_type=query_type, media_id=selected_item.result_id, extra_kwargs=selected_item.extra_kwargs)]}
@@ -134,7 +142,21 @@ def main():
             else:
                 print(f'Search must be done as orpheus.py [search/luckysearch] [module] [{media_types}] [query]')
                 exit() # TODO: replace with InvalidInput
-
+        elif orpheus_mode == 'download':
+            if len(args.arguments) > 3:
+                modulename = args.arguments[1].lower()
+                if modulename in orpheus.module_list:
+                    try:
+                        media_type = DownloadTypeEnum[args.arguments[2].lower()]
+                    except KeyError:
+                        raise Exception(f'{args.arguments[2].lower()} is not a valid download type! Choose {media_types}')
+                    media_to_download = {modulename: [MediaIdentification(media_type=media_type, media_id=i) for i in args.arguments[3:]]}
+                else:
+                    modules = [i for i in orpheus.module_list if ModuleFlags.hidden not in orpheus.module_settings[i].flags]
+                    raise Exception(f'Unknown module name "{modulename}". Must select from: {", ".join(modules)}') # TODO: replace with InvalidModuleError
+            else:
+                print(f'Download must be done as orpheus.py [download] [module] [{media_types}] [media ID 1] [media ID 2] ...')
+                exit() # TODO: replace with InvalidInput
         else:  # if no specific modes are detected, parse as urls, but first try loading as a list of URLs
             arguments = tuple(open(args.arguments[0], 'r')) if len(args.arguments) == 1 and os.path.exists(args.arguments[0]) else args.arguments
             media_to_download = {}

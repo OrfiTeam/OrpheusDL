@@ -7,7 +7,6 @@ from typing import Optional
 from utils.utils import read_temporary_setting, set_temporary_setting
 
 
-# Best place to put the class, due to circular imports...
 class Oprinter:  # Could change to inherit from print class instead, but this is fine
     def __init__(self):
         self.indent_number = 1
@@ -45,6 +44,7 @@ class CodecEnum(Flag):
     MHA1 = auto()  # Lossy, requires license, spatial
     EAC3 = auto()  # Specifically E-AC-3 JOC # Lossy, proprietary, spatial
     AC4 = auto()  # Specifically AC-4 IMS # Lossy, proprietary, spatial
+    NONE = auto()  # No codec
 
 
 class ContainerEnum(Flag):
@@ -86,7 +86,8 @@ codec_data = {
     CodecEnum.HEAAC:  CodecData(pretty_name='HE-AAC',     container=ContainerEnum.m4a,  lossless=False, spatial=False, proprietary=False),
     CodecEnum.MHA1:   CodecData(pretty_name='MPEG-H 3D',  container=ContainerEnum.m4a,  lossless=False, spatial=True,  proprietary=False),
     CodecEnum.EAC3:   CodecData(pretty_name='E-AC-3 JOC', container=ContainerEnum.m4a,  lossless=False, spatial=True,  proprietary=True),
-    CodecEnum.AC4:    CodecData(pretty_name='AC-4 IMS',   container=ContainerEnum.m4a,  lossless=False, spatial=True,  proprietary=True)
+    CodecEnum.AC4:    CodecData(pretty_name='AC-4 IMS',   container=ContainerEnum.m4a,  lossless=False, spatial=True,  proprietary=True),
+    CodecEnum.NONE:   CodecData(pretty_name='Error',       container=ContainerEnum.m4a, lossless=False, spatial=False, proprietary=False)
 }  # Note: spatial has priority over proprietary when deciding if a codec is enabled
 
 
@@ -151,7 +152,8 @@ class ModuleInformation:
     session_settings: Optional[dict] = field(default_factory=dict)
     session_storage_variables: Optional[list] = None
     flags: Optional[ModuleFlags] = field(default_factory=dict)
-    netlocation_constant: Optional[str] = ''
+    netlocation_constant: Optional[str] or Optional[list] = field(default_factory=list) # not sure if this works with python 3.7/3.8
+    # note that by setting netlocation_constant to setting.X, it will use that setting instead
     url_constants: Optional[dict] = None
     test_url: Optional[str] = None
     url_decoding: Optional[ManualEnum] = ManualEnum.orpheus
@@ -180,6 +182,7 @@ class MediaIdentification:
 
 
 class QualityEnum(Flag):
+    MINIMUM = auto()
     LOW = auto()
     MEDIUM = auto()
     HIGH = auto()
@@ -227,7 +230,7 @@ class ModuleController:
     orpheus_options: OrpheusOptions
     get_current_timestamp: FunctionType
     printer_controller: Oprinter
-    module_error: ClassMethodDescriptorType  # DEPRECATED
+    module_error: ClassMethodDescriptorType  # Will eventually be deprecated *sigh*
 
 
 @dataclass
@@ -244,8 +247,7 @@ class Tags:
     replay_gain: Optional[float] = None
     replay_peak: Optional[float] = None
     genres: Optional[list] = None
-    # Use YYYY-MM-DD for consistency
-    release_date: Optional[str] = None
+    release_date: Optional[str] = None # Format: YYYY-MM-DD
 
 
 @dataclass
@@ -282,6 +284,7 @@ class AlbumInfo:
     cover_type: Optional[ImageFileTypeEnum] = ImageFileTypeEnum.jpg
     all_track_cover_jpg_url: Optional[str] = None
     animated_cover_url: Optional[str] = None
+    description: Optional[str] = None
     track_extra_kwargs: Optional[dict] = field(default_factory=dict)
 
 
@@ -305,6 +308,7 @@ class PlaylistInfo:
     cover_url: Optional[str] = None
     cover_type: Optional[ImageFileTypeEnum] = ImageFileTypeEnum.jpg
     animated_cover_url: Optional[str] = None
+    description: Optional[str] = None
     track_extra_kwargs: Optional[dict] = field(default_factory=dict)
 
 
@@ -321,6 +325,7 @@ class TrackInfo:
     explicit: Optional[bool] = None
     artist_id: Optional[str] = None
     animated_cover_url: Optional[str] = None
+    description: Optional[str] = None
     bit_depth: Optional[int] = 16
     sample_rate: Optional[float] = 44.1
     bitrate: Optional[int] = None
