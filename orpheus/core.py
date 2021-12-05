@@ -134,15 +134,19 @@ class Orpheus:
             url_constants = module_info.netlocation_constant
             if not isinstance(url_constants, list): url_constants = [str(url_constants)]
             for constant in url_constants:
-                if constant.startswith('setting.'): constant = self.settings['modules'][module][constant.split('setting.')[1]]
+                if constant.startswith('setting.'):
+                    if module in self.settings['modules']:
+                        constant = self.settings['modules'][module][constant.split('setting.')[1]]
+                    else:
+                        constant = None
                 
-                if constant not in self.module_netloc_constants:
-                    self.module_netloc_constants[constant] = module
-                elif ModuleFlags.private in module_info.flags: # Replacing public modules with private ones
-                    if ModuleFlags.private in self.module_settings[constant].flags: duplicates.add(constant)
-                else:
-                    duplicates.add(sorted([module, self.module_netloc_constants[constant]]))
-            
+                if constant:
+                    if constant not in self.module_netloc_constants:
+                        self.module_netloc_constants[constant] = module
+                    elif ModuleFlags.private in module_info.flags: # Replacing public modules with private ones
+                        if ModuleFlags.private in self.module_settings[constant].flags: duplicates.add(constant)
+                    else:
+                        duplicates.add(sorted([module, self.module_netloc_constants[constant]]))
         if duplicates: raise Exception('Multiple modules installed that connect to the same service names: ' + ', '.join(' and '.join(duplicates)))
 
         self.update_module_storage()
