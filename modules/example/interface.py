@@ -67,7 +67,8 @@ class ModuleInterface:
             total_discs = 1, # None/0/1 if no discs
             replay_gain = 0.0,
             replay_peak = 0.0,
-            genres = []
+            genres = [],
+            release_date = '1969-09-06' # Format: YYYY-MM-DD
         )
 
         return TrackInfo(

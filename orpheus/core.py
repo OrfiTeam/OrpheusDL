@@ -35,7 +35,8 @@ class Orpheus:
         self.default_global_settings = {
             "general": {
                 "download_path": "./downloads/",
-                "download_quality": "hifi"
+                "download_quality": "hifi",
+                "search_limit": 10
             },
             "artist_downloading":{
                 "return_credited_albums": True,
@@ -135,7 +136,7 @@ class Orpheus:
             if not isinstance(url_constants, list): url_constants = [str(url_constants)]
             for constant in url_constants:
                 if constant.startswith('setting.'):
-                    if module in self.settings['modules']:
+                    if self.settings.get('modules') and self.settings['modules'].get(module):
                         constant = self.settings['modules'][module][constant.split('setting.')[1]]
                     else:
                         constant = None

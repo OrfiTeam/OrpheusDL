@@ -109,7 +109,7 @@ def main():
                     
                     query = ' '.join(args.arguments[3:])
                     module = orpheus.load_module(modulename)
-                    items = module.search(query_type, query, limit = (1 if lucky_mode else 10))
+                    items = module.search(query_type, query, limit = (1 if lucky_mode else orpheus.settings['global']['general']['search_limit']))
                     if len(items) == 0:
                         raise Exception(f'No search results for {query_type.name}: {query}')
 

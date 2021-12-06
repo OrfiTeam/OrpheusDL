@@ -40,7 +40,7 @@ Follow these steps to get a local copy of Orpheus up and running:
 
 ### Prerequisites
 
-* Python 3.7+ (due to the requirement of dataclasses)
+* Python 3.7+ (due to the requirement of dataclasses), though Python 3.9 is highly recommended
 
 ### Installation
 
@@ -53,9 +53,9 @@ Follow these steps to get a local copy of Orpheus up and running:
    ```shell
    pip install -r requirements.txt
    ```
-3. Run the program at least once
+3. Run the program at least once, or use this command to create the settings file
    ```shell
-   python3 orpheus.py
+   python3 orpheus.py settings refresh
    ```
 4. Enter your credentials in `config/settings.json`
 
@@ -70,6 +70,11 @@ python3 orpheus.py https://open.qobuz.com/album/c9wsrrjh49ftb
 Alternatively do a search (luckysearch to automatically select the first option):
 ```shell
 python3 orpheus.py search qobuz track darkside alan walker
+```
+
+Or if you have the ID of what you want to download, use:
+``shell
+python3 orpheus.py download qobuz track 52151405
 ```
 
 <!-- CONFIGURATION -->
