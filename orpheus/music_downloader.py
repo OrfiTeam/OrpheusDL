@@ -76,16 +76,16 @@ class Downloader:
                 self.service = self.loaded_modules[custom_module]
                 self.service_name = custom_module
                 results = self.search_by_tags(custom_module, track_info)
-                track_id = results[0].result_id if len(results) else None
+                track_id_new = results[0].result_id if len(results) else None
                 
-                if track_id:
-                    self.download_track(track_id, album_location=playlist_path, track_index=index, number_of_tracks=number_of_tracks, indent_level=2, extra_kwargs=results[0].extra_kwargs)
+                if track_id_new:
+                    self.download_track(track_id_new, album_location=playlist_path, track_index=index, number_of_tracks=number_of_tracks, indent_level=2, extra_kwargs=results[0].extra_kwargs)
                 else:
+                    tracks_errored.add(f'{track_info.name} - {track_info.artists[0]}')
                     if ModuleModes.download in self.module_settings[original_service].module_supported_modes:
                         self.service = self.loaded_modules[original_service]
                         self.service_name = original_service
                         self.print(f'Track {track_info.name} not found, using the original service as a fallback', drop_level=1)
-                        tracks_errored.add(f'{track_info.name} - {track_info.artists[0]}')
                         self.download_track(track_id, album_location=playlist_path, track_index=index, number_of_tracks=number_of_tracks, indent_level=2, extra_kwargs=playlist_info.track_extra_kwargs)
                     else:
                         self.print(f'Track {track_info.name} not found, skipping')
