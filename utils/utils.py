@@ -13,11 +13,11 @@ def hash_string(input_str: str, hash_type: str = 'MD5'):
         raise Exception('Invalid hash type selected')
 
 def create_requests_session():
-        session_ = requests.Session()
-        retries = Retry(total=10, backoff_factor=0.4, status_forcelist=[429, 500, 502, 503, 504])
-        session_.mount('http://', HTTPAdapter(max_retries=retries))
-        session_.mount('https://', HTTPAdapter(max_retries=retries))
-        return session_
+    session_ = requests.Session()
+    retries = Retry(total=10, backoff_factor=0.4, status_forcelist=[429, 500, 502, 503, 504])
+    session_.mount('http://', HTTPAdapter(max_retries=retries))
+    session_.mount('https://', HTTPAdapter(max_retries=retries))
+    return session_
 
 sanitise_name = lambda name : re.sub(r'[:]', ' - ', re.sub(r'[\\\/*?"<>|$]', '', str(name)))
 r_session = create_requests_session()

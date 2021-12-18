@@ -242,16 +242,15 @@ class Downloader:
             self.print(f'=== Track {track_id} failed ===', drop_level=1)
             return
 
-        if self.download_mode is DownloadTypeEnum.track:
+        album_location = album_location.replace('\\', '/')
+        if self.download_mode is DownloadTypeEnum.track: # Python 3.10 can't become popular sooner, ugh
             track_location_name = self.path + self.global_settings['formatting']['single_full_path_format'].format(**track_tags)
-            track_folder = track_location_name[:track_location_name.rfind('/')]
-            os.makedirs(track_folder, exist_ok=True)
+        elif track_info.tags.total_tracks == 1:
+            track_location_name = album_location + self.global_settings['formatting']['single_full_path_format'].format(**track_tags)
         else:
-            album_location = album_location.replace('\\', '/')
             if track_info.tags.total_discs and track_info.tags.total_discs > 1: album_location += f'CD {track_info.tags.disc_number!s}/'
-            if album_location: os.makedirs(album_location, exist_ok=True)
-            track_location_name = album_location + self.global_settings['formatting']['single_full_path_format'].format(**track_tags) if \
-                track_info.tags.total_tracks == 1 else album_location + self.global_settings['formatting']['track_filename_format'].format(**track_tags)
+            track_location_name = album_location + self.global_settings['formatting']['track_filename_format'].format(**track_tags)
+        os.makedirs(track_location_name[:track_location_name.rfind('/')], exist_ok=True)
 
         try:
             conversions = {CodecEnum[k.upper()]: CodecEnum[v.upper()] for k, v in self.global_settings['advanced']['codec_conversions'].items()}
