@@ -196,7 +196,7 @@ class Downloader:
         if tracks_skipped > 0: self.print(f'Tracks skipped: {tracks_skipped!s}', drop_level=1)
         self.print(f'=== Artist {artist_name} downloaded ===', drop_level=1)
 
-    def download_track(self, track_id, album_location=None, main_artist='', track_index=0, number_of_tracks=0, cover_temp_location='', indent_level=1, extra_kwargs={}):
+    def download_track(self, track_id, album_location='', main_artist='', track_index=0, number_of_tracks=0, cover_temp_location='', indent_level=1, extra_kwargs={}):
         quality_tier = QualityEnum[self.global_settings['general']['download_quality'].upper()]
         codec_options = CodecOptions(
             spatial_codecs = self.global_settings['codecs']['spatial_codecs'],

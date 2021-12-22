@@ -73,7 +73,7 @@ python3 orpheus.py search qobuz track darkside alan walker
 ```
 
 Or if you have the ID of what you want to download, use:
-``shell
+```shell
 python3 orpheus.py download qobuz track 52151405
 ```
 
