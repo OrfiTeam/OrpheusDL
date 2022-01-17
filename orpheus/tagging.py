@@ -29,7 +29,8 @@ def tag_file(file_path: str, image_path: str, track_info: TrackInfo, credits_lis
     elif container == ContainerEnum.mp3:
         tagger = EasyMP3(file_path)
 
-        if tagger.tags is None: tagger.tags = EasyID3() # Add EasyID3 tags if none are present
+        if tagger.tags is None:
+            tagger.tags = EasyID3()  # Add EasyID3 tags if none are present
 
         # Register encoded, rating, barcode, compatible_brands, major_brand and minor_version
         tagger.tags.RegisterTextKey('encoded', 'TSSE')
@@ -51,7 +52,15 @@ def tag_file(file_path: str, image_path: str, track_info: TrackInfo, credits_lis
     else:
         raise Exception('Unknown container for tagging')
 
-    (tagger.tags.pop(i, None) for i in ['major_brand', 'minor_version', 'compatible_brands', 'encoder']) # Remove all useless MPEG-DASH ffmpeg tags
+    # Remove all useless MPEG-DASH ffmpeg tags
+    if 'major_brand' in tagger.tags:
+        del tagger.tags['major_brand']
+    if 'minor_version' in tagger.tags:
+        del tagger.tags['minor_version']
+    if 'compatible_brands' in tagger.tags:
+        del tagger.tags['compatible_brands']
+    if 'encoder' in tagger.tags:
+        del tagger.tags['encoder']
 
     tagger['title'] = track_info.name
     if track_info.album: tagger['album'] = track_info.album
