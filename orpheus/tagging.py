@@ -43,6 +43,10 @@ def tag_file(file_path: str, image_path: str, track_info: TrackInfo, credits_lis
         tagger.tags.pop('encoded', None)
     elif container == ContainerEnum.m4a:
         tagger = EasyMP4(file_path)
+
+        if tagger.tags is None:
+            tagger.tags = EasyMP4()  # identical to EasyID3
+
         # Register ISRC, lyrics, cover and explicit tags
         tagger.RegisterTextKey('isrc', '----:com.apple.itunes:ISRC')
         tagger.RegisterTextKey('upc', '----:com.apple.itunes:UPC')
