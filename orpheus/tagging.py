@@ -44,9 +44,6 @@ def tag_file(file_path: str, image_path: str, track_info: TrackInfo, credits_lis
     elif container == ContainerEnum.m4a:
         tagger = EasyMP4(file_path)
 
-        if tagger.tags is None:
-            tagger.tags = EasyMP4()  # identical to EasyID3
-
         # Register ISRC, lyrics, cover and explicit tags
         tagger.RegisterTextKey('isrc', '----:com.apple.itunes:ISRC')
         tagger.RegisterTextKey('upc', '----:com.apple.itunes:UPC')
@@ -57,14 +54,15 @@ def tag_file(file_path: str, image_path: str, track_info: TrackInfo, credits_lis
         raise Exception('Unknown container for tagging')
 
     # Remove all useless MPEG-DASH ffmpeg tags
-    if 'major_brand' in tagger.tags:
-        del tagger.tags['major_brand']
-    if 'minor_version' in tagger.tags:
-        del tagger.tags['minor_version']
-    if 'compatible_brands' in tagger.tags:
-        del tagger.tags['compatible_brands']
-    if 'encoder' in tagger.tags:
-        del tagger.tags['encoder']
+    if tagger.tags is not None:
+        if 'major_brand' in tagger.tags:
+            del tagger.tags['major_brand']
+        if 'minor_version' in tagger.tags:
+            del tagger.tags['minor_version']
+        if 'compatible_brands' in tagger.tags:
+            del tagger.tags['compatible_brands']
+        if 'encoder' in tagger.tags:
+            del tagger.tags['encoder']
 
     tagger['title'] = track_info.name
     if track_info.album: tagger['album'] = track_info.album
