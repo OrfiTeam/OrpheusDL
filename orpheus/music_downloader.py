@@ -279,6 +279,16 @@ class Downloader:
             download_info: TrackDownloadInfo = self.service.get_track_download(**track_info.download_extra_kwargs)
             download_file(download_info.file_url, track_location, headers=download_info.file_url_headers, enable_progress_bar=True, indent_level=self.oprinter.indent_number) \
                 if download_info.download_type is DownloadEnum.URL else os.rename(download_info.temp_file_path, track_location)
+
+            # check if get_track_download returns a different codec, for example ffmpeg failed
+            if download_info.different_codec:
+                # overwrite the old known codec with the new
+                codec = download_info.different_codec
+                container = codec_data[codec].container
+                old_track_location = track_location
+                # create the new track_location and move the old file to the new location
+                track_location = f'{track_location_name}.{container.name}'
+                os.rename(old_track_location, track_location)
         except:
             if self.global_settings['advanced']['debug_mode']: raise
             self.print('Warning: Track download failed: ' + str(sys.exc_info()[1]))

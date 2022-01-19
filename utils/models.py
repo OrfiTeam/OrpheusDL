@@ -27,9 +27,9 @@ class Oprinter:  # Could change to inherit from print class instead, but this is
 
         self.indent_number = number * self.multiplier
 
-    def oprint(self, input: str, drop_level: int = 0):
+    def oprint(self, inp: str, drop_level: int = 0):
         if self.printing_enabled:
-            print(' ' * (self.indent_number - drop_level * self.multiplier) + input)
+            print(' ' * (self.indent_number - drop_level * self.multiplier) + inp)
 
 
 class CodecEnum(Flag):
@@ -342,3 +342,4 @@ class TrackDownloadInfo:
     file_url: Optional[str] = None
     file_url_headers: Optional[dict] = None
     temp_file_path: Optional[str] = None
+    different_codec: Optional[CodecEnum] = None
