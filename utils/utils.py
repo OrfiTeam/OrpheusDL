@@ -122,7 +122,7 @@ def save_to_temp(input: bytes):
     open(location, 'wb').write(input)
     return location
 
-def download_to_temp(url, headers={}, extension=''):
+def download_to_temp(url, headers={}, extension='', enable_progress_bar=False, indent_level=0):
     location = create_temp_filename() + (('.' + extension) if extension else '')
-    download_file(url, location, headers=headers)
+    download_file(url, location, headers=headers, enable_progress_bar=enable_progress_bar, indent_level=indent_level)
     return location

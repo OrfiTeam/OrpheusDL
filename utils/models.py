@@ -247,7 +247,8 @@ class Tags:
     replay_gain: Optional[float] = None
     replay_peak: Optional[float] = None
     genres: Optional[list] = None
-    release_date: Optional[str] = None # Format: YYYY-MM-DD
+    release_date: Optional[str] = None  # Format: YYYY-MM-DD
+    extra_tags: Optional[dict] = field(default_factory=dict)
 
 
 @dataclass

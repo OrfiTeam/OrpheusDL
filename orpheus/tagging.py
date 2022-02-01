@@ -114,6 +114,11 @@ def tag_file(file_path: str, image_path: str, track_info: TrackInfo, credits_lis
     if track_info.tags.isrc: tagger['isrc'] = track_info.tags.isrc.encode() if container == ContainerEnum.m4a else track_info.tags.isrc
     if track_info.tags.upc: tagger['UPC'] = track_info.tags.upc.encode() if container == ContainerEnum.m4a else track_info.tags.upc
 
+    # add all extra_kwargs key value pairs to the (FLAC, Vorbis) file
+    if container in {ContainerEnum.flac, ContainerEnum.ogg}:
+        for key, value in track_info.tags.extra_tags.items():
+            tagger[key] = value
+
     # Need to change to merge duplicate credits automatically, or switch to plain dicts instead of list[dataclass]
     if credits_list:
         if container == ContainerEnum.m4a:
