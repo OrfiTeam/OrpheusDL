@@ -20,6 +20,17 @@ def create_requests_session():
     return session_
 
 sanitise_name = lambda name : re.sub(r'[:]', ' - ', re.sub(r'[\\\/*?"<>|$]', '', re.sub(r'[ \t]+$', '', str(name))))
+
+
+def fix_file_limit(path: str, file_limit=250):
+    # only needs the relative path, the abspath uses already existing folders
+    rel_path = os.path.relpath(path).replace('\\', '/')
+    # iterate over all folders and file and check for a file_limit violation
+    split_path = [folder[:file_limit] if len(folder) > file_limit else folder for folder in rel_path.split('/')]
+    # join the split_path together
+    return '/'.join(split_path)
+
+
 r_session = create_requests_session()
 
 def download_file(url, file_location, headers={}, enable_progress_bar=False, indent_level=0):

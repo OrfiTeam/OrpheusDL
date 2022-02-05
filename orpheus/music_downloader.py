@@ -40,7 +40,9 @@ class Downloader:
         
         playlist_tags = {k: sanitise_name(v) for k, v in asdict(playlist_info).items()}
         playlist_tags['explicit'] = ' [E]' if playlist_info.explicit else ''
-        playlist_path = self.path + self.global_settings['formatting']['playlist_format'].format(**playlist_tags) + '/'
+        playlist_path = self.path + self.global_settings['formatting']['playlist_format'].format(**playlist_tags)
+        # fix path character limit
+        playlist_path = fix_file_limit(playlist_path) + '/'
         os.makedirs(playlist_path, exist_ok=True)
         
         if playlist_info.cover_url:
@@ -115,7 +117,9 @@ class Downloader:
             album_tags = {k: sanitise_name(v) for k, v in asdict(album_info).items()}
             album_tags['quality'] = f' [{album_info.quality}]' if album_info.quality else ''
             album_tags['explicit'] = ' [E]' if album_info.explicit else ''
-            album_path = path + self.global_settings['formatting']['album_format'].format(**album_tags) + '/'
+            album_path = path + self.global_settings['formatting']['album_format'].format(**album_tags)
+            # fix path character limit
+            album_path = fix_file_limit(album_path) + '/'
             os.makedirs(album_path, exist_ok=True)
         
             if self.download_mode is DownloadTypeEnum.album:
@@ -250,6 +254,8 @@ class Downloader:
         else:
             if track_info.tags.total_discs and track_info.tags.total_discs > 1: album_location += f'CD {track_info.tags.disc_number!s}/'
             track_location_name = album_location + self.global_settings['formatting']['track_filename_format'].format(**track_tags)
+        # fix file and path character limit
+        track_location_name = fix_file_limit(track_location_name)
         os.makedirs(track_location_name[:track_location_name.rfind('/')], exist_ok=True)
 
         try:
