@@ -166,7 +166,6 @@ class ExtensionInformation:
     settings: dict
 
 
-@dataclass
 class DownloadTypeEnum(Flag):
     track = auto()
     playlist = auto()

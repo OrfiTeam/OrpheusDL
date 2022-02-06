@@ -260,8 +260,8 @@ class Downloader:
         album_location = album_location.replace('\\', '/')
 
         # Ignores "single_full_path_format" and just downloads every track as an album
-        if self.global_settings['formatting']['force_album_format'] and self.download_mode in [
-            DownloadTypeEnum.track, DownloadTypeEnum.playlist]:
+        if self.global_settings['formatting']['force_album_format'] and self.download_mode in {
+            DownloadTypeEnum.track, DownloadTypeEnum.playlist}:
             # Fetch every needed album_info tag and create an album_location
             album_info: AlbumInfo = self.service.get_album_info(track_info.album_id)
             # Save the playlist path to save all the albums in the playlist path
