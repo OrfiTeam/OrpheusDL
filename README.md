@@ -44,11 +44,10 @@ Follow these steps to get a local copy of Orpheus up and running:
 
 ### Installation
 
-1. Clone the repo 
-   * Without modules:
-      ```shell
-      git clone https://github.com/yarrm80s/orpheusdl.git
-      ```
+1. Clone the repo
+    ```shell
+    git clone https://github.com/yarrm80s/orpheusdl.git && cd orpheusdl
+    ```
 2. Install all requirements
    ```shell
    pip install -r requirements.txt
@@ -83,22 +82,119 @@ python3 orpheus.py download qobuz track 52151405
 You can customize every module from Orpheus individually and also set general/global settings which are active in every
 loaded module. You'll find the configuration file here: `config/settings.json`
 
+### Global/General
+```json5
+{
+    "download_path": "./downloads/",
+    "download_quality": "hifi",
+    "search_limit": 10
+}
+```
+
+`download_path`: Set the absolute or relative output path with `/` as the delimiter
+
+`download_quality`: Choose one of the following settings:
+* "hifi": FLAC higher than 44.1/16 if available
+* "lossless": FLAC with 44.1/16 if available
+* "high": lossy codecs such as MP3, AAC, ... in a higher bitrate
+* "medium": lossy codecs such as MP3, AAC, ... in a medium bitrate
+* "low": lossy codecs such as MP3, AAC, ... in a lower bitrate
+
+**NOTE: The `download_quality` really depends on the used modules, so check out the modules README.md**
+
+`search_limit`: How many search results are shown
+
+
 ### Global/Formatting:
+
+```json5
+{
+    "album_format": "{name}{explicit}",
+    "playlist_format": "{name}{explicit}",
+    "track_filename_format": "{track_number}. {name}",
+    "single_full_path_format": "{name}",
+    "enable_zfill": true,
+    "force_album_format": false
+}
+```
 
 `track_filename_format`: How tracks are formatted in albums and playlists. The relevant extension is appended to the end.
 
-`album_format`, `playlist_format`, `artist_format`: Base directories for their respective formats - tracks and cover art are stored here. May have slashes in it,
-for instance {artist}/{album}.
+`album_format`, `playlist_format`, `artist_format`: Base directories for their respective formats - tracks and cover
+art are stored here. May have slashes in it, for instance {artist}/{album}.
 
-`single_full_path_format`: How singles are handled, which is separate to how the above work. Instead, this has both the folder's name and the track's name.
+`single_full_path_format`: How singles are handled, which is separate to how the above work.
+Instead, this has both the folder's name and the track's name.
+
+`enable_zfill`: Enables zero padding for `track_number`, `total_tracks`, `disc_number`, `total_discs` if the
+corresponding number has more than 2 digits
+
+`force_album_format`: Forces the `album_format` for tracks instead of the `single_full_path_format` and also
+uses `album_format` in the `playlist_format` folder 
+
 
 #### Format variables
 
-`track_format` variables are `{name}`, `{album}`, `{album_artist}`, `{album_id}`, `{track_number}`,
+`track_filename_format` variables are `{name}`, `{album}`, `{album_artist}`, `{album_id}`, `{track_number}`,
 `{total_tracks}`, `{disc_number}`, `{total_discs}`, `{release_date}`, `{release_year}`, `{artist_id}`, `{isrc}`,
-`{upc}`, `{explicit}`.
+`{upc}`, `{explicit}`, `{copyright}`, `{codec}`, `{sample_rate}`, `{bit_depth}`.
 
-`album_format` variables are `{name}`, `{artist}`, `{artist_id}`, `{release_year}`, `{UPC}`, `{explicit}`, `{quality}`.
+`album_format` variables are `{name}`, `{artist}`, `{artist_id}`, `{release_year}`, `{upc}`, `{explicit}`, `{quality}`.
+
+`playlist_format` variables are `{name}`, `{creator}`, `{tracks}`, `{release_year}`, `{explicit}`, `{creator_id}`
+
+* `{quality}` will add
+    ```
+     [Dolby Atmos]
+     [96kHz 24bit]
+     [M]
+    ```
+ to the corresponding path (depending on the module)
+* `{explicit}` will add
+    ```
+     [E]
+    ```
+  to the corresponding path
+
+### Global/Codecs
+
+```json5
+{
+    "proprietary_codecs": false,
+    "spatial_codecs": true
+}
+```
+
+`proprietary_codecs`: Enable it to allow `MQA`, `E-AC-3 JOC` or `AC-4 IMS`
+
+`spatial_codecs`: Enable it to allow `MPEG-H 3D`, `E-AC-3 JOC` or `AC-4 IMS`
+
+**Note: `spatial_codecs` has priority over `proprietary_codecs` when deciding if a codec is enabled**
+
+### Global/Module_defaults
+
+```json5
+{
+    "lyrics": "default",
+    "covers": "default",
+    "credits": "default"
+}
+```
+
+Change `default` to the module name under `/modules` in order to retrieve `lyrics`, `covers` or `credits` from the
+selected module
+
+### Global/Lyrics
+```json5
+{
+    "embed_lyrics": true,
+    "save_synced_lyrics": true
+}
+```
+
+`embed_lyrics`: Embeds the (unsynced) lyrics in the downloaded `.flac`, `.mp3`, `.m4a` file 
+
+`save_synced_lyrics`: Saves a `.lrc` file in the same directory as the track with the same `track_format` variables
 
 <!-- Contact -->
 ## Contact
