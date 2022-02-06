@@ -103,6 +103,31 @@ class Downloader:
 
         if tracks_errored: logging.debug('Failed tracks: ' + ', '.join(tracks_errored))
 
+    def _create_album_location(self, path: str, album_info: AlbumInfo) -> str:
+        # Clean up album tags and add special explicit and additional formats
+        album_tags = {k: sanitise_name(v) for k, v in asdict(album_info).items()}
+        album_tags['quality'] = f' [{album_info.quality}]' if album_info.quality else ''
+        album_tags['explicit'] = ' [E]' if album_info.explicit else ''
+        album_path = path + self.global_settings['formatting']['album_format'].format(**album_tags)
+        # fix path character limit
+        album_path = fix_file_limit(album_path) + '/'
+        os.makedirs(album_path, exist_ok=True)
+
+        return album_path
+
+    def _download_album_files(self, album_path: str, album_info: AlbumInfo):
+        if album_info.cover_url:
+            self.print('Downloading album cover')
+            download_file(album_info.cover_url, f'{album_path}Cover.{album_info.cover_type.name}')
+
+        if album_info.animated_cover_url and self.global_settings['covers']['save_animated_cover']:
+            self.print('Downloading animated album cover')
+            download_file(album_info.animated_cover_url, album_path + 'Cover.mp4', enable_progress_bar=True)
+
+        if album_info.description:
+            with open(album_path + 'Description.txt', 'w', encoding='utf-8') as f:
+                f.write(album_info.description)  # Also add support for this with singles maybe?
+
     def download_album(self, album_id, artist_name='', path=None, indent_level=1, extra_kwargs={}):
         self.set_indent_number(indent_level)
 
@@ -112,15 +137,9 @@ class Downloader:
         number_of_tracks = len(album_info.tracks)
         path = self.path if not path else path
 
-        if number_of_tracks > 1:
-            # Clean up album tags and add special explicit and additional formats
-            album_tags = {k: sanitise_name(v) for k, v in asdict(album_info).items()}
-            album_tags['quality'] = f' [{album_info.quality}]' if album_info.quality else ''
-            album_tags['explicit'] = ' [E]' if album_info.explicit else ''
-            album_path = path + self.global_settings['formatting']['album_format'].format(**album_tags)
-            # fix path character limit
-            album_path = fix_file_limit(album_path) + '/'
-            os.makedirs(album_path, exist_ok=True)
+        if number_of_tracks > 1 or self.global_settings['formatting']['force_album_format']:
+            # Creates the album_location folders
+            album_path = self._create_album_location(path, album_info)
         
             if self.download_mode is DownloadTypeEnum.album:
                 self.set_indent_number(1)
@@ -139,16 +158,8 @@ class Downloader:
             
             cover_temp_location = download_to_temp(album_info.all_track_cover_jpg_url) if album_info.all_track_cover_jpg_url else ''
 
-            if album_info.cover_url:
-                self.print('Downloading album cover')
-                download_file(album_info.cover_url, f'{album_path}Cover.{album_info.cover_type.name}')
-
-            if album_info.animated_cover_url and self.global_settings['covers']['save_animated_cover']:
-                self.print('Downloading animated album cover')
-                download_file(album_info.animated_cover_url, album_path + 'Cover.mp4', enable_progress_bar=True)
-
-            if album_info.description:
-                with open(album_path + 'Description.txt', 'w', encoding='utf-8') as f: f.write(album_info.description) # Also add support for this with singles maybe?
+            # Download booklet, animated album cover and album cover if present
+            self._download_album_files(album_path, album_info)
 
             for index, track_id in enumerate(album_info.tracks, start=1):
                 self.set_indent_number(indent_level + 1)
@@ -247,9 +258,23 @@ class Downloader:
             return
 
         album_location = album_location.replace('\\', '/')
-        if self.download_mode is DownloadTypeEnum.track: # Python 3.10 can't become popular sooner, ugh
+
+        # Ignores "single_full_path_format" and just downloads every track as an album
+        if self.global_settings['formatting']['force_album_format'] and self.download_mode in [
+            DownloadTypeEnum.track, DownloadTypeEnum.playlist]:
+            # Fetch every needed album_info tag and create an album_location
+            album_info: AlbumInfo = self.service.get_album_info(track_info.album_id)
+            # Save the playlist path to save all the albums in the playlist path
+            path = self.path if album_location == '' else album_location
+            album_location = self._create_album_location(path, album_info)
+            album_location = album_location.replace('\\', '/')
+
+            # Download booklet, animated album cover and album cover if present
+            self._download_album_files(album_location, album_info)
+
+        if self.download_mode is DownloadTypeEnum.track and not self.global_settings['formatting']['force_album_format']:  # Python 3.10 can't become popular sooner, ugh
             track_location_name = self.path + self.global_settings['formatting']['single_full_path_format'].format(**track_tags)
-        elif track_info.tags.total_tracks == 1:
+        elif track_info.tags.total_tracks == 1 and not self.global_settings['formatting']['force_album_format']:
             track_location_name = album_location + self.global_settings['formatting']['single_full_path_format'].format(**track_tags)
         else:
             if track_info.tags.total_discs and track_info.tags.total_discs > 1: album_location += f'CD {track_info.tags.disc_number!s}/'
