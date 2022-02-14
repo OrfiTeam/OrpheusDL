@@ -222,11 +222,12 @@ class Downloader:
         if main_artist.lower() not in [i.lower() for i in track_info.artists] and self.global_settings['advanced']['ignore_different_artists'] and self.download_mode is DownloadTypeEnum.artist:
            self.print('Track is not from the correct artist, skipping', drop_level=1)
            return
-        
-        if track_index:
-            track_info.tags.track_number = track_index
-        if number_of_tracks:
-            track_info.tags.total_tracks = number_of_tracks
+
+        if not self.global_settings['formatting']['force_album_format']:
+            if track_index:
+                track_info.tags.track_number = track_index
+            if number_of_tracks:
+                track_info.tags.total_tracks = number_of_tracks
         zfill_number = len(str(track_info.tags.total_tracks)) if self.download_mode is not DownloadTypeEnum.track else 1
         zfill_lambda = lambda input : sanitise_name(str(input)).zfill(zfill_number) if input is not None else None
 
