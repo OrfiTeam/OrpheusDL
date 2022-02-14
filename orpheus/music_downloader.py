@@ -103,9 +103,10 @@ class Downloader:
 
         if tracks_errored: logging.debug('Failed tracks: ' + ', '.join(tracks_errored))
 
-    def _create_album_location(self, path: str, album_info: AlbumInfo) -> str:
+    def _create_album_location(self, path: str, album_id: str, album_info: AlbumInfo) -> str:
         # Clean up album tags and add special explicit and additional formats
         album_tags = {k: sanitise_name(v) for k, v in asdict(album_info).items()}
+        album_tags['id'] = str(album_id)
         album_tags['quality'] = f' [{album_info.quality}]' if album_info.quality else ''
         album_tags['explicit'] = ' [E]' if album_info.explicit else ''
         album_path = path + self.global_settings['formatting']['album_format'].format(**album_tags)
@@ -139,7 +140,7 @@ class Downloader:
 
         if number_of_tracks > 1 or self.global_settings['formatting']['force_album_format']:
             # Creates the album_location folders
-            album_path = self._create_album_location(path, album_info)
+            album_path = self._create_album_location(path, album_id, album_info)
         
             if self.download_mode is DownloadTypeEnum.album:
                 self.set_indent_number(1)
@@ -267,7 +268,7 @@ class Downloader:
             album_info: AlbumInfo = self.service.get_album_info(track_info.album_id)
             # Save the playlist path to save all the albums in the playlist path
             path = self.path if album_location == '' else album_location
-            album_location = self._create_album_location(path, album_info)
+            album_location = self._create_album_location(path, track_info.album_id, album_info)
             album_location = album_location.replace('\\', '/')
 
             # Download booklet, animated album cover and album cover if present
