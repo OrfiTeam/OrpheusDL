@@ -38,35 +38,35 @@ def download_file(url, file_location, headers={}, enable_progress_bar=False, ind
         return None
 
     r = r_session.get(url, stream=True, headers=headers, verify=False)
-    with open(file_location, 'wb') as f:
-        if 'content-length' in r.headers:
-            total = int(r.headers['content-length'])
-            try:
-                with open(file_location, 'wb') as f:
-                    if enable_progress_bar:
-                        try:
-                            columns = os.get_terminal_size().columns
-                            if os.name == 'nt':
-                                bar = tqdm(total=total, unit='B', unit_scale=True, unit_divisor=1024, initial=0, miniters=1, ncols=(columns-indent_level), bar_format=' '*indent_level + '{l_bar}{bar}{r_bar}')
-                            else:
-                                raise
-                        except:
-                            bar = tqdm(total=total, unit='B', unit_scale=True, unit_divisor=1024, initial=0, miniters=1, bar_format=' '*indent_level + '{l_bar}{bar}{r_bar}')
-                        #bar.set_description(' '*indent_level)
-                        for chunk in r.iter_content(chunk_size=1024):
-                            if chunk:  # filter out keep-alive new chunks
-                                f.write(chunk)
-                                bar.update(len(chunk))
-                        bar.close()
+
+    total = None
+    if 'content-length' in r.headers:
+        total = int(r.headers['content-length'])
+
+    try:
+        with open(file_location, 'wb') as f:
+            if enable_progress_bar and total:
+                try:
+                    columns = os.get_terminal_size().columns
+                    if os.name == 'nt':
+                        bar = tqdm(total=total, unit='B', unit_scale=True, unit_divisor=1024, initial=0, miniters=1, ncols=(columns-indent_level), bar_format=' '*indent_level + '{l_bar}{bar}{r_bar}')
                     else:
-                        [f.write(chunk) for chunk in r.iter_content(chunk_size=1024) if chunk]
-            except KeyboardInterrupt:
-                if os.path.isfile(file_location):
-                    print(f'\tDeleting partially downloaded file "{str(file_location)}"')
-                    silentremove(file_location)
-                raise
-        else:
-            f.write(r.content)
+                        raise
+                except:
+                    bar = tqdm(total=total, unit='B', unit_scale=True, unit_divisor=1024, initial=0, miniters=1, bar_format=' '*indent_level + '{l_bar}{bar}{r_bar}')
+                # bar.set_description(' '*indent_level)
+                for chunk in r.iter_content(chunk_size=1024):
+                    if chunk:  # filter out keep-alive new chunks
+                        f.write(chunk)
+                        bar.update(len(chunk))
+                bar.close()
+            else:
+                [f.write(chunk) for chunk in r.iter_content(chunk_size=1024) if chunk]
+    except KeyboardInterrupt:
+        if os.path.isfile(file_location):
+            print(f'\tDeleting partially downloaded file "{str(file_location)}"')
+            silentremove(file_location)
+        raise KeyboardInterrupt
 
 # root mean square code by Charlie Clark: https://code.activestate.com/recipes/577630-comparing-two-images/
 def compare_images(image_1, image_2):

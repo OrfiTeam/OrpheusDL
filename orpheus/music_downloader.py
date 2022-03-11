@@ -322,7 +322,10 @@ class Downloader:
                 # create the new track_location and move the old file to the new location
                 track_location = f'{track_location_name}.{container.name}'
                 os.rename(old_track_location, track_location)
-        except:
+        except KeyboardInterrupt:
+            self.print('^C pressed, exiting')
+            sys.exit(0)
+        except Exception:
             if self.global_settings['advanced']['debug_mode']: raise
             self.print('Warning: Track download failed: ' + str(sys.exc_info()[1]))
             self.print(f'=== Track {track_id} failed ===', drop_level=1)
