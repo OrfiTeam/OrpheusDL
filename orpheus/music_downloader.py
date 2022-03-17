@@ -1,4 +1,5 @@
 import logging, os, ffmpeg, sys
+import shutil
 from dataclasses import asdict
 
 from orpheus.tagging import tag_file
@@ -311,7 +312,7 @@ class Downloader:
         try:
             download_info: TrackDownloadInfo = self.service.get_track_download(**track_info.download_extra_kwargs)
             download_file(download_info.file_url, track_location, headers=download_info.file_url_headers, enable_progress_bar=True, indent_level=self.oprinter.indent_number) \
-                if download_info.download_type is DownloadEnum.URL else os.rename(download_info.temp_file_path, track_location)
+                if download_info.download_type is DownloadEnum.URL else shutil.move(download_info.temp_file_path, track_location)
 
             # check if get_track_download returns a different codec, for example ffmpeg failed
             if download_info.different_codec:
@@ -321,7 +322,7 @@ class Downloader:
                 old_track_location = track_location
                 # create the new track_location and move the old file to the new location
                 track_location = f'{track_location_name}.{container.name}'
-                os.rename(old_track_location, track_location)
+                shutil.move(old_track_location, track_location)
         except KeyboardInterrupt:
             self.print('^C pressed, exiting')
             sys.exit(0)
@@ -374,7 +375,7 @@ class Downloader:
                             break
                 else:
                     self.print('Third-party module could not find cover, using fallback')
-                    os.rename(default_temp, cover_temp_location)
+                    shutil.move(default_temp, cover_temp_location)
             else:
                 download_file(track_info.cover_url, cover_temp_location)
                 if self.global_settings['covers']['save_external'] and ModuleModes.covers in self.module_settings[self.service_name].module_supported_modes:
@@ -496,7 +497,7 @@ class Downloader:
                     track_location = temp_track_location
 
                 # move temp_file to new_track_location and delete temp file
-                os.rename(temp_track_location, new_track_location)
+                shutil.move(temp_track_location, new_track_location)
                 silentremove(temp_track_location)
 
                 if self.global_settings['advanced']['conversion_keep_original']:
