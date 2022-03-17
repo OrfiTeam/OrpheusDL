@@ -37,7 +37,7 @@ def tag_file(file_path: str, image_path: str, track_info: TrackInfo, credits_lis
         tagger.tags.RegisterTXXXKey('compatible_brands', 'compatible_brands')
         tagger.tags.RegisterTXXXKey('major_brand', 'major_brand')
         tagger.tags.RegisterTXXXKey('minor_version', 'minor_version')
-        tagger.tags.RegisterTXXXKey('Rating', 'RATING')
+        tagger.tags.RegisterTXXXKey('Rating', 'Rating')
         tagger.tags.RegisterTXXXKey('upc', 'BARCODE')
 
         tagger.tags.pop('encoded', None)

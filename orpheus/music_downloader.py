@@ -483,10 +483,21 @@ class Downloader:
                     self.print('Warning: conversion_flags setting is invalid, using defaults')
                 
                 conv_flags = conversion_flags[new_codec] if new_codec in conversion_flags else {}
+                temp_track_location = f'{create_temp_filename()}.{new_codec_data.container.name}'
                 new_track_location = f'{track_location_name}.{new_codec_data.container.name}'
                 
                 stream: ffmpeg = ffmpeg.input(track_location, hide_banner=None, y=None)
-                stream.output(new_track_location, acodec=new_codec.name.lower(), **conv_flags, loglevel='error').run()
+                stream.output(temp_track_location, acodec=new_codec.name.lower(), **conv_flags, loglevel='error').run()
+
+                # remove file if it requires an overwrite, maybe os.replace would work too?
+                if track_location == new_track_location:
+                    silentremove(track_location)
+                    # just needed so it won't get deleted
+                    track_location = temp_track_location
+
+                # move temp_file to new_track_location and delete temp file
+                os.rename(temp_track_location, new_track_location)
+                silentremove(temp_track_location)
 
                 if self.global_settings['advanced']['conversion_keep_original']:
                     old_track_location = track_location
