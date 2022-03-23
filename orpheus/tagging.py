@@ -118,6 +118,11 @@ def tag_file(file_path: str, image_path: str, track_info: TrackInfo, credits_lis
     if container in {ContainerEnum.flac, ContainerEnum.ogg}:
         for key, value in track_info.tags.extra_tags.items():
             tagger[key] = value
+    elif container is ContainerEnum.m4a:
+        for key, value in track_info.tags.extra_tags.items():
+            # Create a new freeform atom and set the extra_tags in bytes
+            tagger.RegisterTextKey(key, '----:com.apple.itunes:' + key)
+            tagger[key] = str(value).encode()
 
     # Need to change to merge duplicate credits automatically, or switch to plain dicts instead of list[dataclass]
     if credits_list:

@@ -37,6 +37,7 @@ class ModuleInterface:
         self.module_controller = module_controller
 
         self.quality_parse = {
+            QualityEnum.MINIMUM: 0,
             QualityEnum.LOW: 1,
             QualityEnum.MEDIUM: 2,
             QualityEnum.HIGH: 3,
