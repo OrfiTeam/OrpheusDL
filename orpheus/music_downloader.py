@@ -2,6 +2,8 @@ import logging, os, ffmpeg, sys
 import shutil
 from dataclasses import asdict
 
+from ffmpeg import Error
+
 from orpheus.tagging import tag_file
 from utils.models import *
 from utils.utils import *
@@ -488,7 +490,31 @@ class Downloader:
                 new_track_location = f'{track_location_name}.{new_codec_data.container.name}'
                 
                 stream: ffmpeg = ffmpeg.input(track_location, hide_banner=None, y=None)
-                stream.output(temp_track_location, acodec=new_codec.name.lower(), **conv_flags, loglevel='error').run()
+                # capture_stderr is required for the error output to be captured
+                try:
+                    # capture_stderr is required for the error output to be captured
+                    stream.output(
+                        temp_track_location,
+                        acodec=new_codec.name.lower(),
+                        **conv_flags,
+                        loglevel='error'
+                    ).run(capture_stdout=True, capture_stderr=True)
+                except Error as e:
+                    error_msg = e.stderr.decode('utf-8')
+                    # get the error message from ffmpeg and search foe the non-experimental encoder
+                    encoder = re.search(r"(?<=non experimental encoder ')[^']+", error_msg)
+                    if encoder:
+                        self.print(f'Encoder {new_codec.name.lower()} is experimental, trying {encoder.group(0)}')
+                        # try to use the non-experimental encoder
+                        stream.output(
+                            temp_track_location,
+                            acodec=encoder.group(0),
+                            **conv_flags,
+                            loglevel='error'
+                        ).run()
+                    else:
+                        # raise any other occurring error
+                        raise Exception(f'ffmpeg error converting to {new_codec.name.lower()}:\n{error_msg}')
 
                 # remove file if it requires an overwrite, maybe os.replace would work too?
                 if track_location == new_track_location:

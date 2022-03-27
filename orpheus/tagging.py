@@ -68,8 +68,7 @@ def tag_file(file_path: str, image_path: str, track_info: TrackInfo, credits_lis
     if track_info.album: tagger['album'] = track_info.album
     if track_info.tags.album_artist: tagger['albumartist'] = track_info.tags.album_artist
 
-    # Only tested for MPEG-4, FLAC and MP3
-    tagger['artist'] = track_info.artists if container in {ContainerEnum.m4a, ContainerEnum.flac, ContainerEnum.mp3} else track_info.artists[0]
+    tagger['artist'] = track_info.artists
 
     if container == ContainerEnum.m4a or container == ContainerEnum.mp3:
         if track_info.tags.track_number and track_info.tags.total_tracks:
@@ -110,7 +109,7 @@ def tag_file(file_path: str, image_path: str, track_info: TrackInfo, credits_lis
         else:
             tagger['Rating'] = 'Explicit' if track_info.explicit else 'Clean'
 
-    if track_info.tags.genres: tagger['genre'] = track_info.tags.genres[0]  # TODO: all of them
+    if track_info.tags.genres: tagger['genre'] = track_info.tags.genres
     if track_info.tags.isrc: tagger['isrc'] = track_info.tags.isrc.encode() if container == ContainerEnum.m4a else track_info.tags.isrc
     if track_info.tags.upc: tagger['UPC'] = track_info.tags.upc.encode() if container == ContainerEnum.m4a else track_info.tags.upc
 
@@ -180,7 +179,7 @@ def tag_file(file_path: str, image_path: str, track_info: TrackInfo, credits_lis
                 data=data
             )
         # If you want to have a cover in only a few applications, then this technically works for Opus
-        elif container == ContainerEnum.ogg or container == ContainerEnum.opus:
+        elif container in {ContainerEnum.ogg, ContainerEnum.opus}:
             im = Image.open(image_path)
             width, height = im.size
             picture.type = 17
