@@ -64,6 +64,7 @@ class Orpheus:
                 "save_synced_lyrics": True
             },
             "covers": {
+                "embed_cover": True,
                 "main_compression": "high",
                 "main_resolution": 1400,
                 "save_external": False,

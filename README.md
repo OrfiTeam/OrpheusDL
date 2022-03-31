@@ -156,6 +156,32 @@ uses `album_format` in the `playlist_format` folder
     ```
   to the corresponding path
 
+### Global/Covers
+
+```json5
+{
+    "embed_cover": true,
+    "main_compression": "high",
+    "main_resolution": 1400,
+    "save_external": false,
+    "external_format": "png",
+    "external_compression": "low",
+    "external_resolution": 3000,
+    "save_animated_cover": true
+}
+```
+
+| Option               | Info                                                                                     |
+|----------------------|------------------------------------------------------------------------------------------|
+| embed_cover          | Enable it to embed the album cover inside every track                                    |
+| main_compression     | Compression of the main cover                                                            |
+| main_resolution      | Resolution (in pixels) of the cover of the module used                                   |
+| save_external        | Enable it to save the cover from a third party cover module                              |
+| external_format      | Format of the third party cover, supported values: `jpg`, `png`, `webp`                  |
+| external_compression | Compression of the third party cover, supported values: `low`, `high`                    |
+| external_resolution  | Resolution (in pixels) of the third party cover                                          |
+| save_animated_cover  | Enable saving the animated cover when supported from the module (often in MPEG-4 format) |
+
 ### Global/Codecs
 
 ```json5

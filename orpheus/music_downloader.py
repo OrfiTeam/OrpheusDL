@@ -538,10 +538,14 @@ class Downloader:
         # Finally tag file
         self.print('Tagging file')
         try:
-            tag_file(track_location, cover_temp_location, track_info, credits_list, embedded_lyrics, container)
-            if old_track_location: tag_file(old_track_location, cover_temp_location, track_info, credits_list, embedded_lyrics, old_container)
+            tag_file(track_location, cover_temp_location if self.global_settings['covers']['embed_cover'] else None,
+                     track_info, credits_list, embedded_lyrics, container)
+            if old_track_location:
+                tag_file(old_track_location, cover_temp_location if self.global_settings['covers']['embed_cover'] else None,
+                         track_info, credits_list, embedded_lyrics, old_container)
         except TagSavingFailure:
             self.print('Tagging failed, tags saved to text file')
-        if delete_cover: silentremove(cover_temp_location)
+        if delete_cover:
+            silentremove(cover_temp_location)
         
         self.print(f'=== Track {track_id} downloaded ===', drop_level=1)
