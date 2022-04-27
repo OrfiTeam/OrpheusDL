@@ -238,8 +238,8 @@ class Downloader:
         # Separate copy of tags for formatting purposes
         zfill_enabled, zfill_list = self.global_settings['formatting']['enable_zfill'], ['track_number', 'total_tracks', 'disc_number', 'total_discs']
         track_tags = {k: (zfill_lambda(v) if zfill_enabled and k in zfill_list else sanitise_name(v)) for k, v in {**asdict(track_info.tags), **asdict(track_info)}.items()}
-        track_tags['explicit'] = '[E]' if track_info.explicit else ''
-        track_tags['artist'] = track_info.artists[0] # if len(track_info.artists) == 1 else 'Various Artists'
+        track_tags['explicit'] = ' [E]' if track_info.explicit else ''
+        track_tags['artist'] = track_info.artists[0]  # if len(track_info.artists) == 1 else 'Various Artists'
         codec = track_info.codec
 
         self.set_indent_number(indent_level)
