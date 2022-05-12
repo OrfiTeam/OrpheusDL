@@ -214,13 +214,16 @@ selected module
 ```json5
 {
     "embed_lyrics": true,
+    "embed_synced_lyrics": false,
     "save_synced_lyrics": true
 }
 ```
 
-`embed_lyrics`: Embeds the (unsynced) lyrics in the downloaded `.flac`, `.mp3`, `.m4a` file 
-
-`save_synced_lyrics`: Saves a `.lrc` file in the same directory as the track with the same `track_format` variables
+| Option              | Info                                                                                                                                                                |
+|---------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| embed_lyrics        | Embeds the (unsynced) lyrics inside every track                                                                                                                     |
+| embed_synced_lyrics | Embeds the synced lyrics inside every track (needs `embed_lyrics` to be enabled) (required for [Roon](https://community.roonlabs.com/t/1-7-lyrics-tag-guide/85182)) |
+| save_synced_lyrics  | Saves the synced lyrics inside a  `.lrc` file in the same directory as the track with the same `track_format` variables                                             |
 
 <!-- Contact -->
 ## Contact

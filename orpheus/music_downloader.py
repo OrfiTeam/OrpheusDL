@@ -422,6 +422,10 @@ class Downloader:
 
             if lyrics_info.embedded and self.global_settings['lyrics']['embed_lyrics']:
                 embedded_lyrics = lyrics_info.embedded
+            # embed the synced lyrics (f.e. Roon) if they are available
+            if lyrics_info.synced and self.global_settings['lyrics']['embed_lyrics'] and \
+                    self.global_settings['lyrics']['embed_synced_lyrics']:
+                embedded_lyrics = lyrics_info.synced
             if lyrics_info.synced and self.global_settings['lyrics']['save_synced_lyrics']:
                 lrc_location = f'{track_location_name}.lrc'
                 if not os.path.isfile(lrc_location):

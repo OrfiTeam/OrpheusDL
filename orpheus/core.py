@@ -61,6 +61,7 @@ class Orpheus:
             },
             "lyrics": {
                 "embed_lyrics": True,
+                "embed_synced_lyrics": False,
                 "save_synced_lyrics": True
             },
             "covers": {
