@@ -192,7 +192,7 @@ class Downloader:
         if number_of_albums: self.print(f'Number of albums: {number_of_albums!s}')
         if number_of_tracks: self.print(f'Number of tracks: {number_of_tracks!s}')
         self.print(f'Service: {self.module_settings[self.service_name].service_name}')
-        artist_path = self.path + artist_name + '/'
+        artist_path = self.path + sanitise_name(artist_name) + '/'
 
         self.set_indent_number(2)
         tracks_downloaded = []
@@ -239,7 +239,7 @@ class Downloader:
         zfill_enabled, zfill_list = self.global_settings['formatting']['enable_zfill'], ['track_number', 'total_tracks', 'disc_number', 'total_discs']
         track_tags = {k: (zfill_lambda(v) if zfill_enabled and k in zfill_list else sanitise_name(v)) for k, v in {**asdict(track_info.tags), **asdict(track_info)}.items()}
         track_tags['explicit'] = ' [E]' if track_info.explicit else ''
-        track_tags['artist'] = track_info.artists[0]  # if len(track_info.artists) == 1 else 'Various Artists'
+        track_tags['artist'] = sanitise_name(track_info.artists[0])  # if len(track_info.artists) == 1 else 'Various Artists'
         codec = track_info.codec
 
         self.set_indent_number(indent_level)
