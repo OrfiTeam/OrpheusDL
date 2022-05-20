@@ -214,7 +214,7 @@ class Orpheus:
                             any(k not in hashes or hashes[k] != v for k,v in temporary_session['hashes'].items() if k in self.module_settings[module].session_settings):
                             print('Logging into ' + self.module_settings[module].service_name)
                             try:
-                                loaded_module.login(settings['email'] if 'email' in settings else settings['username'], settings['password'])
+                                loaded_module.login(settings['email'] if 'email' in settings else settings['username'], settings['password'], *{settings['password_hash']})
                             except:
                                 set_temporary_setting(self.session_storage_location, module, 'hashes', None, {})
                                 raise
