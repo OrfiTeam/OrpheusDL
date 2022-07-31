@@ -95,8 +95,9 @@ class Orpheus:
             }
         }
 
-        self.settings_location = 'config/settings.json'
-        self.session_storage_location = 'config/loginstorage.bin'
+        self.data_folder_base = 'config'
+        self.settings_location = os.path.join(self.data_folder_base, 'settings.json')
+        self.session_storage_location = os.path.join(self.data_folder_base, 'loginstorage.bin')
 
         os.makedirs('config', exist_ok=True)
         self.settings = json.loads(open(self.settings_location, 'r').read()) if os.path.exists(self.settings_location) else {}
@@ -183,6 +184,7 @@ class Orpheus:
                 
                 module_controller = ModuleController(
                     module_settings = self.settings['modules'][module] if module in self.settings['modules'] else {},
+                    data_folder = os.path.join(self.data_folder_base, 'modules', module),
                     extensions = self.extensions,
                     temporary_settings_controller = TemporarySettingsController(module, self.session_storage_location),
                     module_error = ModuleError, # DEPRECATED
@@ -222,6 +224,9 @@ class Orpheus:
                     if ModuleFlags.enable_jwt_system in self.module_settings[module].flags and temporary_session and \
                             temporary_session['refresh'] and not temporary_session['bearer']:
                         loaded_module.refresh_login()
+
+                data_folder = os.path.join(self.data_folder_base, 'modules', module)
+                if ModuleFlags.uses_data in self.module_settings[module].flags and not os.path.exists(data_folder): os.makedirs(data_folder)
 
                 logging.debug(f'Orpheus: {module} module has been loaded')
                 return loaded_module
