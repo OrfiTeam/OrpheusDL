@@ -254,6 +254,7 @@ class Tags:
     replay_peak: Optional[float] = None
     genres: Optional[list] = None
     release_date: Optional[str] = None  # Format: YYYY-MM-DD
+    label: Optional[str] = None
     extra_tags: Optional[dict] = field(default_factory=dict)
 
 
