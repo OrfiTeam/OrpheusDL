@@ -254,6 +254,8 @@ class Tags:
     replay_peak: Optional[float] = None
     genres: Optional[list] = None
     release_date: Optional[str] = None  # Format: YYYY-MM-DD
+    description: Optional[str] = None
+    comment: Optional[str] = None
     label: Optional[str] = None
     extra_tags: Optional[dict] = field(default_factory=dict)
 
@@ -330,6 +332,7 @@ class TrackInfo:
     codec: CodecEnum
     cover_url: str
     release_year: int
+    duration: Optional[int] = None  # Duration in whole seconds
     explicit: Optional[bool] = None
     artist_id: Optional[str] = None
     animated_cover_url: Optional[str] = None

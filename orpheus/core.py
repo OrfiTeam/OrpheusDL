@@ -74,6 +74,11 @@ class Orpheus:
                 "external_resolution": 3000,
                 "save_animated_cover": True
             },
+            "playlist": {
+                "save_m3u": True,
+                "paths_m3u": "absolute",
+                "extended_m3u": True
+            },
             "advanced": {
                 "advanced_login_system": False,
                 "codec_conversions": {
@@ -145,7 +150,7 @@ class Orpheus:
                         constant = self.settings['modules'][module][constant.split('setting.')[1]]
                     else:
                         constant = None
-                
+
                 if constant:
                     if constant not in self.module_netloc_constants:
                         self.module_netloc_constants[constant] = module
@@ -167,7 +172,7 @@ class Orpheus:
             self.extensions[extension_type][extension] = class_(settings)
 
         [self.load_module(module) for module in self.module_list if ModuleFlags.startup_load in self.module_settings[module].flags]
-        
+
         self.module_controls = {'module_list': self.module_list, 'module_settings': self.module_settings,
             'loaded_modules': self.loaded_modules, 'module_loader': self.load_module}
 
@@ -181,7 +186,7 @@ class Orpheus:
                 class ModuleError(Exception): # TODO: get rid of this, as it is deprecated
                     def __init__(self, message):
                         super().__init__(module + ' --> ' + str(message))
-                
+
                 module_controller = ModuleController(
                     module_settings = self.settings['modules'][module] if module in self.settings['modules'] else {},
                     data_folder = os.path.join(self.data_folder_base, 'modules', module),
@@ -211,7 +216,7 @@ class Orpheus:
                 if self.module_settings[module].login_behaviour is ManualEnum.orpheus:
                     # Login if simple mode, username login and requested by update_setting_storage
                     if temporary_session and temporary_session['clear_session'] and not self.settings['global']['advanced']['advanced_login_system']:
-                        hashes = {k:hash_string(v) for k,v in settings.items()}
+                        hashes = {k: hash_string(str(v)) for k, v in settings.items()}
                         if not temporary_session.get('hashes') or \
                             any(k not in hashes or hashes[k] != v for k,v in temporary_session['hashes'].items() if k in self.module_settings[module].session_settings):
                             print('Logging into ' + self.module_settings[module].service_name)
@@ -238,7 +243,7 @@ class Orpheus:
     def update_module_storage(self): # Should be refactored eventually
         ## Settings
         old_settings, new_settings, global_settings, extension_settings, module_settings, new_setting_detected = {}, {}, {}, {}, {}, False
-        
+
         for i in ['global', 'extensions', 'modules']:
             old_settings[i] = self.settings[i] if i in self.settings else {}
 
@@ -246,7 +251,10 @@ class Orpheus:
             if setting_type in old_settings['global']:
                 global_settings[setting_type] = {}
                 for setting in self.default_global_settings[setting_type]:
-                    if setting in old_settings['global'][setting_type]:
+                    # Also check if the type is identical
+                    if (setting in old_settings['global'][setting_type] and
+                            isinstance(self.default_global_settings[setting_type][setting],
+                                       type(old_settings['global'][setting_type][setting]))):
                         global_settings[setting_type][setting] = old_settings['global'][setting_type][setting]
                     else:
                         global_settings[setting_type][setting] = self.default_global_settings[setting_type][setting]
@@ -306,11 +314,11 @@ class Orpheus:
             if self.module_settings[i].global_storage_variables: new_module_sessions[i]['custom_data'] = \
                 {j:new_module_sessions[i]['custom_data'][j] for j in self.module_settings[i].global_storage_variables \
                     if 'custom_data' in new_module_sessions[i] and j in new_module_sessions[i]['custom_data']}
-            
+
             for current_session in new_module_sessions[i]['sessions'].values():
                 # For simple login type only, as it does not apply to advanced login
                 if self.module_settings[i].login_behaviour is ManualEnum.orpheus and not advanced_login_mode:
-                    hashes = {k:hash_string(v) for k,v in module_settings[i].items()}
+                    hashes = {k:hash_string(str(v)) for k,v in module_settings[i].items()}
                     if current_session.get('hashes'):
                         clear_session = any(k not in hashes or hashes[k] != v for k,v in current_session['hashes'].items() if k in self.module_settings[i].session_settings)
                     else:
