@@ -6,7 +6,7 @@ from PIL import Image
 from mutagen.easyid3 import EasyID3
 from mutagen.easymp4 import EasyMP4
 from mutagen.flac import FLAC, Picture
-from mutagen.id3 import PictureType, APIC, USLT, TDAT, TPUB
+from mutagen.id3 import PictureType, APIC, USLT, TDAT, COMM, TPUB
 from mutagen.mp3 import EasyMP3
 from mutagen.mp4 import MP4Cover
 from mutagen.mp4 import MP4Tags
@@ -127,6 +127,24 @@ def tag_file(file_path: str, image_path: str, track_info: TrackInfo, credits_lis
             # only works with MP3TAG? https://docs.mp3tag.de/mapping/
             tagger.RegisterTextKey('label', '\xa9pub')
             tagger['label'] = track_info.tags.label
+
+    # add the description tag
+    if track_info.tags.description and container == ContainerEnum.m4a:
+        tagger.RegisterTextKey('desc', 'description')
+        tagger['description'] = track_info.tags.description
+
+    # add comment tag
+    if track_info.tags.comment:
+        if container == ContainerEnum.m4a:
+            tagger.RegisterTextKey('comment', '\xa9cmt')
+            tagger['comment'] = track_info.tags.comment
+        elif container == ContainerEnum.mp3:
+            tagger.tags._EasyID3__id3._DictProxy__dict['COMM'] = COMM(
+                encoding=3,
+                lang=u'eng',
+                desc=u'',
+                text=track_info.tags.description
+            )
 
     # add all extra_kwargs key value pairs to the (FLAC, Vorbis) file
     if container in {ContainerEnum.flac, ContainerEnum.ogg}:
