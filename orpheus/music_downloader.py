@@ -30,6 +30,25 @@ class Downloader:
     def search_by_tags(self, module_name, track_info: TrackInfo):
         return self.loaded_modules[module_name].search(DownloadTypeEnum.track, f'{track_info.name} {" ".join(track_info.artists)}', track_info=track_info)
 
+    def _add_track_m3u_playlist(self, m3u_playlist: str, track_info: TrackInfo, track_location: str):
+        if self.global_settings['playlist']['extended_m3u']:
+            with open(m3u_playlist, 'a', encoding='utf-8') as f:
+                # if no duration exists default to -1
+                duration = track_info.duration if track_info.duration else -1
+                # write the extended track header
+                f.write(f'#EXTINF:{duration}, {track_info.artists[0]} - {track_info.name}\n')
+
+        with open(m3u_playlist, 'a', encoding='utf-8') as f:
+            if self.global_settings['playlist']['paths_m3u'] == "absolute":
+                # add the absolute paths to the playlist
+                f.write(f'{os.path.abspath(track_location)}\n')
+            else:
+                # add the relative paths to the playlist by subtracting the track_location with the m3u_path
+                f.write(f'{os.path.relpath(track_location, os.path.dirname(m3u_playlist))}\n')
+
+            # add an extra new line to the extended format
+            f.write('\n') if self.global_settings['playlist']['extended_m3u'] else None
+
     def download_playlist(self, playlist_id, custom_module=None, extra_kwargs={}):
         self.set_indent_number(1)
 
@@ -59,6 +78,23 @@ class Downloader:
         if playlist_info.description:
             with open(playlist_path + 'Description.txt', 'w', encoding='utf-8') as f: f.write(playlist_info.description)
 
+        m3u_playlist_path = None
+        if self.global_settings['playlist']['save_m3u']:
+            if self.global_settings['playlist']['paths_m3u'] not in {"absolute", "relative"}:
+                raise ValueError(f'Invalid value for paths_m3u: "{self.global_settings["playlist"]["paths_m3u"]}",'
+                                 f' must be either "absolute" or "relative"')
+
+            m3u_playlist_path = playlist_path + f'{playlist_tags["name"]}.m3u'
+
+            # create empty file
+            with open(m3u_playlist_path, 'w', encoding='utf-8') as f:
+                f.write('')
+
+            # if extended format add the header
+            if self.global_settings['playlist']['extended_m3u']:
+                with open(m3u_playlist_path, 'a', encoding='utf-8') as f:
+                    f.write('#EXTM3U\n\n')
+
         tracks_errored = set()
         if custom_module:
             supported_modes = self.module_settings[custom_module].module_supported_modes 
@@ -84,14 +120,14 @@ class Downloader:
                 track_id_new = results[0].result_id if len(results) else None
                 
                 if track_id_new:
-                    self.download_track(track_id_new, album_location=playlist_path, track_index=index, number_of_tracks=number_of_tracks, indent_level=2, extra_kwargs=results[0].extra_kwargs)
+                    self.download_track(track_id_new, album_location=playlist_path, track_index=index, number_of_tracks=number_of_tracks, indent_level=2, m3u_playlist=m3u_playlist_path, extra_kwargs=results[0].extra_kwargs)
                 else:
                     tracks_errored.add(f'{track_info.name} - {track_info.artists[0]}')
                     if ModuleModes.download in self.module_settings[original_service].module_supported_modes:
                         self.service = self.loaded_modules[original_service]
                         self.service_name = original_service
                         self.print(f'Track {track_info.name} not found, using the original service as a fallback', drop_level=1)
-                        self.download_track(track_id, album_location=playlist_path, track_index=index, number_of_tracks=number_of_tracks, indent_level=2, extra_kwargs=playlist_info.track_extra_kwargs)
+                        self.download_track(track_id, album_location=playlist_path, track_index=index, number_of_tracks=number_of_tracks, indent_level=2, m3u_playlist=m3u_playlist_path, extra_kwargs=playlist_info.track_extra_kwargs)
                     else:
                         self.print(f'Track {track_info.name} not found, skipping')
         else:
@@ -99,7 +135,7 @@ class Downloader:
                 self.set_indent_number(2)
                 print()
                 self.print(f'Track {index}/{number_of_tracks}', drop_level=1)
-                self.download_track(track_id, album_location=playlist_path, track_index=index, number_of_tracks=number_of_tracks, indent_level=2, extra_kwargs=playlist_info.track_extra_kwargs)
+                self.download_track(track_id, album_location=playlist_path, track_index=index, number_of_tracks=number_of_tracks, indent_level=2, m3u_playlist=m3u_playlist_path, extra_kwargs=playlist_info.track_extra_kwargs)
 
         self.set_indent_number(1)
         self.print(f'=== Playlist {playlist_info.name} downloaded ===', drop_level=1)
@@ -215,7 +251,7 @@ class Downloader:
         if tracks_skipped > 0: self.print(f'Tracks skipped: {tracks_skipped!s}', drop_level=1)
         self.print(f'=== Artist {artist_name} downloaded ===', drop_level=1)
 
-    def download_track(self, track_id, album_location='', main_artist='', track_index=0, number_of_tracks=0, cover_temp_location='', indent_level=1, extra_kwargs={}):
+    def download_track(self, track_id, album_location='', main_artist='', track_index=0, number_of_tracks=0, cover_temp_location='', indent_level=1, m3u_playlist=None, extra_kwargs={}):
         quality_tier = QualityEnum[self.global_settings['general']['download_quality'].upper()]
         codec_options = CodecOptions(
             spatial_codecs = self.global_settings['codecs']['spatial_codecs'],
@@ -302,6 +338,11 @@ class Downloader:
 
         if os.path.isfile(check_location) and not self.global_settings['advanced']['ignore_existing_files']:
             self.print('Track file already exists')
+
+            # also make sure to add already existing tracks to the m3u playlist
+            if m3u_playlist:
+                self._add_track_m3u_playlist(m3u_playlist, track_info, track_location)
+
             self.print(f'=== Track {track_id} skipped ===', drop_level=1)
             return
 
@@ -538,6 +579,10 @@ class Downloader:
 
                 container = new_codec_data.container    
                 track_location = new_track_location
+
+        # Add the playlist track to the m3u playlist
+        if m3u_playlist:
+            self._add_track_m3u_playlist(m3u_playlist, track_info, track_location)
 
         # Finally tag file
         self.print('Tagging file')
