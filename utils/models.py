@@ -65,6 +65,7 @@ class SearchResult:
     artists: Optional[list] = None
     year: Optional[str] = None
     explicit: Optional[bool] = False
+    duration: Optional[int] = None  # Duration in whole seconds
     additional: Optional[list] = None
     extra_kwargs: Optional[dict] = field(default_factory=dict)
 
@@ -285,6 +286,7 @@ class AlbumInfo:
     artist: str
     tracks: list
     release_year: int
+    duration: Optional[int] = None  # Duration in whole seconds
     explicit: Optional[bool] = False
     artist_id: Optional[str] = None
     quality: Optional[str] = None
@@ -313,6 +315,7 @@ class PlaylistInfo:
     creator: str
     tracks: list
     release_year: int
+    duration: Optional[int] = None  # Duration in whole seconds
     explicit: Optional[bool] = False
     creator_id: Optional[str] = None
     cover_url: Optional[str] = None

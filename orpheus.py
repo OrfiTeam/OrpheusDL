@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 
-import argparse, re
+import argparse
+import re
 from urllib.parse import urlparse
 
 from orpheus.core import *
+from orpheus.music_downloader import beauty_format_seconds
 
 
 def main():
@@ -118,6 +120,7 @@ def main():
                     else:
                         for index, item in enumerate(items, start=1):
                             additional_details = '[E] ' if item.explicit else ''
+                            additional_details += f'[{beauty_format_seconds(item.duration)}] ' if item.duration else ''
                             additional_details += f'[{item.year}] ' if item.year else ''
                             additional_details += ' '.join([f'[{i}]' for i in item.additional]) if item.additional else ''
                             if query_type is not DownloadTypeEnum.artist:
