@@ -1,6 +1,7 @@
 import logging, os, ffmpeg, sys
 import shutil
 from dataclasses import asdict
+from time import strftime, gmtime
 
 from ffmpeg import Error
 
@@ -8,6 +9,19 @@ from orpheus.tagging import tag_file
 from utils.models import *
 from utils.utils import *
 from utils.exceptions import *
+
+
+def beauty_format_seconds(seconds: int) -> str:
+    time_data = gmtime(seconds)
+
+    time_format = "%Mm:%Ss"
+    # if seconds are higher than 3600s also add the hour format
+    if time_data.tm_hour > 0:
+        time_format = "%Hh:" + time_format
+    # TODO: also add days to time_format if hours > 24?
+
+    # return the formatted time string
+    return strftime(time_format, time_data)
 
 
 class Downloader:
@@ -56,6 +70,7 @@ class Downloader:
         self.print(f'=== Downloading playlist {playlist_info.name} ({playlist_id}) ===', drop_level=1)
         self.print(f'Playlist creator: {playlist_info.creator}' + (f' ({playlist_info.creator_id})' if playlist_info.creator_id else ''))
         if playlist_info.release_year: self.print(f'Playlist creation year: {playlist_info.release_year}')
+        if playlist_info.duration: self.print(f'Duration: {beauty_format_seconds(playlist_info.duration)}')
         number_of_tracks = len(playlist_info.tracks)
         self.print(f'Number of tracks: {number_of_tracks!s}')
         self.print(f'Service: {self.module_settings[self.service_name].service_name}')
@@ -189,6 +204,7 @@ class Downloader:
             self.print(f'=== Downloading album {album_info.name} ({album_id}) ===', drop_level=1)
             self.print(f'Artist: {album_info.artist} ({album_info.artist_id})')
             if album_info.release_year: self.print(f'Year: {album_info.release_year}')
+            if album_info.duration: self.print(f'Duration: {beauty_format_seconds(album_info.duration)}')
             self.print(f'Number of tracks: {number_of_tracks!s}')
             self.print(f'Service: {self.module_settings[self.service_name].service_name}')
 
@@ -284,6 +300,7 @@ class Downloader:
         if self.download_mode is not DownloadTypeEnum.album and track_info.album: self.print(f'Album: {track_info.album} ({track_info.album_id})')
         if self.download_mode is not DownloadTypeEnum.artist: self.print(f'Artists: {", ".join(track_info.artists)} ({track_info.artist_id})')
         if track_info.release_year: self.print(f'Release year: {track_info.release_year!s}')
+        if track_info.duration: self.print(f'Duration: {beauty_format_seconds(track_info.duration)}')
         if self.download_mode is DownloadTypeEnum.track: self.print(f'Service: {self.module_settings[self.service_name].service_name}')
 
         to_print = 'Codec: ' + codec_data[codec].pretty_name
