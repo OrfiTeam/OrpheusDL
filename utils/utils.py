@@ -33,7 +33,7 @@ def fix_file_limit(path: str, file_limit=250):
 
 r_session = create_requests_session()
 
-def download_file(url, file_location, headers={}, enable_progress_bar=False, indent_level=0):
+def download_file(url, file_location, headers={}, enable_progress_bar=False, indent_level=0, artwork_settings=None):
     if os.path.isfile(file_location):
         return None
 
@@ -62,6 +62,19 @@ def download_file(url, file_location, headers={}, enable_progress_bar=False, ind
                 bar.close()
             else:
                 [f.write(chunk) for chunk in r.iter_content(chunk_size=1024) if chunk]
+        if artwork_settings and artwork_settings.get('should_resize', False):
+            new_resolution = artwork_settings.get('resolution', 1400)
+            new_format = artwork_settings.get('format', 'jpeg')
+            if new_format == 'jpg': new_format = 'jpeg'
+            new_compression = artwork_settings.get('compression', 'low')
+            if new_compression == 'low':
+                new_compression = 90
+            elif new_compression == 'high':
+                new_compression = 70
+            if new_format == 'png': new_compression = None
+            with Image.open(file_location) as im:
+                im = im.resize((new_resolution, new_resolution), Image.Resampling.BICUBIC)
+                im.save(file_location, new_format, quality=new_compression)
     except KeyboardInterrupt:
         if os.path.isfile(file_location):
             print(f'\tDeleting partially downloaded file "{str(file_location)}"')

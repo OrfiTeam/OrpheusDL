@@ -135,6 +135,7 @@ class ModuleFlags(Flag):
     enable_jwt_system = auto()
     private = auto()
     uses_data = auto()
+    needs_cover_resize = auto()
 
 
 class ModuleModes(Flag):
