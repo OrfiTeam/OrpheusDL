@@ -19,7 +19,7 @@ def create_requests_session():
     session_.mount('https://', HTTPAdapter(max_retries=retries))
     return session_
 
-sanitise_name = lambda name : re.sub(r'[:]', ' - ', re.sub(r'[\\/*?"<>|$]', '', re.sub(r'[ \t]+$', '', str(name).rstrip())))
+sanitise_name = lambda name : re.sub(r'[:]', ' - ', re.sub(r'[\\/*?"<>|$]', '', re.sub(r'[ \t]+$', '', str(name).rstrip()))) if name else ''
 
 
 def fix_file_limit(path: str, file_limit=250):
