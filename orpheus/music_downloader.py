@@ -1,5 +1,6 @@
 import logging, os, ffmpeg, sys
 import shutil
+import unicodedata
 from dataclasses import asdict
 from time import strftime, gmtime
 
@@ -84,14 +85,14 @@ class Downloader:
         
         if playlist_info.cover_url:
             self.print('Downloading playlist cover')
-            download_file(playlist_info.cover_url, f'{playlist_path}Cover.{playlist_info.cover_type.name}', artwork_settings=self._get_artwork_settings())
+            download_file(playlist_info.cover_url, f'{playlist_path}cover.{playlist_info.cover_type.name}', artwork_settings=self._get_artwork_settings())
         
         if playlist_info.animated_cover_url and self.global_settings['covers']['save_animated_cover']:
             self.print('Downloading animated playlist cover')
-            download_file(playlist_info.animated_cover_url, playlist_path + 'Cover.mp4', enable_progress_bar=True)
+            download_file(playlist_info.animated_cover_url, playlist_path + 'cover.mp4', enable_progress_bar=True)
         
         if playlist_info.description:
-            with open(playlist_path + 'Description.txt', 'w', encoding='utf-8') as f: f.write(playlist_info.description)
+            with open(playlist_path + 'description.txt', 'w', encoding='utf-8') as f: f.write(playlist_info.description)
 
         m3u_playlist_path = None
         if self.global_settings['playlist']['save_m3u']:
@@ -157,12 +158,29 @@ class Downloader:
 
         if tracks_errored: logging.debug('Failed tracks: ' + ', '.join(tracks_errored))
 
+    @staticmethod
+    def _get_artist_initials_from_name(album_info: AlbumInfo) -> str:
+        # Remove "the" from the inital string
+        initial = album_info.artist.lower()
+        if album_info.artist.lower().startswith('the'):
+            initial = initial.replace('the ', '')[0].upper()
+
+        # Unicode fix
+        initial = unicodedata.normalize('NFKD', initial[0]).encode('ascii', 'ignore').decode('utf-8')
+
+        # Make the initial upper if it's alpha
+        initial = initial.upper() if initial.isalpha() else '#'
+
+        return initial
+
     def _create_album_location(self, path: str, album_id: str, album_info: AlbumInfo) -> str:
         # Clean up album tags and add special explicit and additional formats
         album_tags = {k: sanitise_name(v) for k, v in asdict(album_info).items()}
         album_tags['id'] = str(album_id)
         album_tags['quality'] = f' [{album_info.quality}]' if album_info.quality else ''
         album_tags['explicit'] = ' [E]' if album_info.explicit else ''
+        album_tags['artist_initials'] = self._get_artist_initials_from_name(album_info)
+
         album_path = path + self.global_settings['formatting']['album_format'].format(**album_tags)
         # fix path character limit
         album_path = fix_file_limit(album_path) + '/'
@@ -173,14 +191,14 @@ class Downloader:
     def _download_album_files(self, album_path: str, album_info: AlbumInfo):
         if album_info.cover_url:
             self.print('Downloading album cover')
-            download_file(album_info.cover_url, f'{album_path}Cover.{album_info.cover_type.name}', artwork_settings=self._get_artwork_settings())
+            download_file(album_info.cover_url, f'{album_path}cover.{album_info.cover_type.name}', artwork_settings=self._get_artwork_settings())
 
         if album_info.animated_cover_url and self.global_settings['covers']['save_animated_cover']:
             self.print('Downloading animated album cover')
-            download_file(album_info.animated_cover_url, album_path + 'Cover.mp4', enable_progress_bar=True)
+            download_file(album_info.animated_cover_url, album_path + 'cover.mp4', enable_progress_bar=True)
 
         if album_info.description:
-            with open(album_path + 'Description.txt', 'w', encoding='utf-8') as f:
+            with open(album_path + 'description.txt', 'w', encoding='utf-8') as f:
                 f.write(album_info.description)  # Also add support for this with singles maybe?
 
     def download_album(self, album_id, artist_name='', path=None, indent_level=1, extra_kwargs={}):

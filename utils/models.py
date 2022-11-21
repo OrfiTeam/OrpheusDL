@@ -43,6 +43,7 @@ class CodecEnum(Flag):
     AAC = auto()  # Lossy, requires license
     HEAAC = auto()  # Lossy, requires license
     MHA1 = auto()  # Lossy, requires license, spatial
+    MHM1 = auto()  # Lossy, requires license, spatial
     EAC3 = auto()  # Specifically E-AC-3 JOC # Lossy, proprietary, spatial
     AC4 = auto()  # Specifically AC-4 IMS # Lossy, proprietary, spatial
     AC3 = auto()  # Lossy, proprietary, spatial kinda
@@ -80,20 +81,21 @@ class CodecData:
 
 
 codec_data = {
-    CodecEnum.FLAC:   CodecData(pretty_name='FLAC',          container=ContainerEnum.flac, lossless=True,  spatial=False, proprietary=False),
-    CodecEnum.ALAC:   CodecData(pretty_name='ALAC',          container=ContainerEnum.m4a,  lossless=True,  spatial=False, proprietary=False),
-    CodecEnum.WAV:    CodecData(pretty_name='WAVE',          container=ContainerEnum.wav,  lossless=True,  spatial=False, proprietary=False),
-    CodecEnum.MQA:    CodecData(pretty_name='MQA',           container=ContainerEnum.flac, lossless=False, spatial=False, proprietary=True),
-    CodecEnum.OPUS:   CodecData(pretty_name='Opus',          container=ContainerEnum.opus, lossless=False, spatial=False, proprietary=False),
-    CodecEnum.VORBIS: CodecData(pretty_name='Vorbis',        container=ContainerEnum.ogg,  lossless=False, spatial=False, proprietary=False),
-    CodecEnum.MP3:    CodecData(pretty_name='MP3',           container=ContainerEnum.mp3,  lossless=False, spatial=False, proprietary=False),
-    CodecEnum.AAC:    CodecData(pretty_name='AAC-LC',        container=ContainerEnum.m4a,  lossless=False, spatial=False, proprietary=False),
-    CodecEnum.HEAAC:  CodecData(pretty_name='HE-AAC',        container=ContainerEnum.m4a,  lossless=False, spatial=False, proprietary=False),
-    CodecEnum.MHA1:   CodecData(pretty_name='MPEG-H 3D',     container=ContainerEnum.m4a,  lossless=False, spatial=True,  proprietary=False),
-    CodecEnum.EAC3:   CodecData(pretty_name='E-AC-3 JOC',    container=ContainerEnum.m4a,  lossless=False, spatial=True,  proprietary=True),
-    CodecEnum.AC4:    CodecData(pretty_name='AC-4 IMS',      container=ContainerEnum.m4a,  lossless=False, spatial=True,  proprietary=True),
-    CodecEnum.AC3:    CodecData(pretty_name='Dolby Digital', container=ContainerEnum.m4a,  lossless=False, spatial=True,  proprietary=True),
-    CodecEnum.NONE:   CodecData(pretty_name='Error',         container=ContainerEnum.m4a,  lossless=False, spatial=False, proprietary=False)
+    CodecEnum.FLAC:   CodecData(pretty_name='FLAC',             container=ContainerEnum.flac, lossless=True,  spatial=False, proprietary=False),
+    CodecEnum.ALAC:   CodecData(pretty_name='ALAC',             container=ContainerEnum.m4a,  lossless=True,  spatial=False, proprietary=False),
+    CodecEnum.WAV:    CodecData(pretty_name='WAVE',             container=ContainerEnum.wav,  lossless=True,  spatial=False, proprietary=False),
+    CodecEnum.MQA:    CodecData(pretty_name='MQA',              container=ContainerEnum.flac, lossless=False, spatial=False, proprietary=True),
+    CodecEnum.OPUS:   CodecData(pretty_name='Opus',             container=ContainerEnum.opus, lossless=False, spatial=False, proprietary=False),
+    CodecEnum.VORBIS: CodecData(pretty_name='Vorbis',           container=ContainerEnum.ogg,  lossless=False, spatial=False, proprietary=False),
+    CodecEnum.MP3:    CodecData(pretty_name='MP3',              container=ContainerEnum.mp3,  lossless=False, spatial=False, proprietary=False),
+    CodecEnum.AAC:    CodecData(pretty_name='AAC-LC',           container=ContainerEnum.m4a,  lossless=False, spatial=False, proprietary=False),
+    CodecEnum.HEAAC:  CodecData(pretty_name='HE-AAC',           container=ContainerEnum.m4a,  lossless=False, spatial=False, proprietary=False),
+    CodecEnum.MHA1:   CodecData(pretty_name='MPEG-H 3D (MHA1)', container=ContainerEnum.m4a,  lossless=False, spatial=True,  proprietary=False),
+    CodecEnum.MHM1:   CodecData(pretty_name='MPEG-H 3D (MHM1)', container=ContainerEnum.m4a,  lossless=False, spatial=True,  proprietary=False),
+    CodecEnum.EAC3:   CodecData(pretty_name='E-AC-3 JOC',       container=ContainerEnum.m4a,  lossless=False, spatial=True,  proprietary=True),
+    CodecEnum.AC4:    CodecData(pretty_name='AC-4 IMS',         container=ContainerEnum.m4a,  lossless=False, spatial=True,  proprietary=True),
+    CodecEnum.AC3:    CodecData(pretty_name='Dolby Digital',    container=ContainerEnum.m4a,  lossless=False, spatial=True,  proprietary=True),
+    CodecEnum.NONE:   CodecData(pretty_name='Error',            container=ContainerEnum.m4a,  lossless=False, spatial=False, proprietary=False)
 }  # Note: spatial has priority over proprietary when deciding if a codec is enabled
 
 
