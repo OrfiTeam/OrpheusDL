@@ -93,7 +93,7 @@ def main():
         else:
             raise Exception(f'Unknown module {module}') # TODO: replace with InvalidModuleError
     else:
-        path = args.output if args.output else orpheus.settings['global']['general']['download_path']
+        path = args.output if args.output else os.path.abspath(orpheus.settings['global']['general']['download_path'])
         if path[-1] == '/': path = path[:-1]  # removes '/' from end if it exists
         os.makedirs(path, exist_ok=True)
 

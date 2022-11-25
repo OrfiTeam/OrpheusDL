@@ -24,7 +24,7 @@ sanitise_name = lambda name : re.sub(r'[:]', ' - ', re.sub(r'[\\/*?"<>|$]', '', 
 
 def fix_file_limit(path: str, file_limit=250):
     # only needs the relative path, the abspath uses already existing folders
-    rel_path = os.path.relpath(path).replace('\\', '/')
+    rel_path = os.path.abspath(path).replace('\\', '/')
     # iterate over all folders and file and check for a file_limit violation
     split_path = [folder[:file_limit] if len(folder) > file_limit else folder for folder in rel_path.split('/')]
     # join the split_path together
