@@ -194,9 +194,8 @@ def main():
 
                         type_ = None
 
-                        for i in url_constants.items():
-                            if re.findall(i[0], url.path):
-                                type_ = i[1]
+                        for key, value in url_constants.items():
+                            type_ = value if re.findall(key, url.path) else type_
                         if not type_:
                             print('Invalid URL entered, quitting')
                             exit() # TODO: replace with InvalidInput
