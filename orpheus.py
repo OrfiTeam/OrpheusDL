@@ -193,8 +193,10 @@ def main():
                             }
 
                         type_ = None
-                        for i in url_constants.values():
-                            type_ = i if re.findall(i.name, url.path) else type_
+
+                        for i in url_constants.items():
+                            if re.findall(i[0], url.path):
+                                type_ = i[1]
                         if not type_:
                             print('Invalid URL entered, quitting')
                             exit() # TODO: replace with InvalidInput
