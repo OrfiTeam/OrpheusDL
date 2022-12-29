@@ -192,15 +192,13 @@ def main():
                                 'artist': DownloadTypeEnum.artist
                             }
 
-                        type_ = None
-                        for i in url_constants.values():
-                            type_ = i if re.findall(i.name, url.path) else type_
-                        if not type_:
-                            print('Invalid URL entered, quitting')
-                            exit() # TODO: replace with InvalidInput
-                        id_ = components[-1]
-                        
-                        media_to_download[service_name].append(MediaIdentification(media_type=type_, media_id=id_))
+                        type_matches = [media_type for url_check, media_type in url_constants.items() if url_check in components]
+
+                        if not type_matches:
+                            print(f'Invalid URL: "{link}"')
+                            exit()
+
+                        media_to_download[service_name].append(MediaIdentification(media_type=type_matches[-1], media_id=components[-1]))
                 else:
                     raise Exception(f'Invalid argument: "{link}"')
 
