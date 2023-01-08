@@ -162,8 +162,8 @@ class Downloader:
     def _get_artist_initials_from_name(album_info: AlbumInfo) -> str:
         # Remove "the" from the inital string
         initial = album_info.artist.lower()
-        if album_info.artist.lower().startswith('the'):
-            initial = initial.replace('the ', '')[0].upper()
+        if album_info.artist.lower().startswith('the') or album_info.artist.lower().startswith('a'):
+            initial = initial.replace('the ', '').replace('a ', '')[0].upper()
 
         # Unicode fix
         initial = unicodedata.normalize('NFKD', initial[0]).encode('ascii', 'ignore').decode('utf-8')
