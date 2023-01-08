@@ -2,6 +2,7 @@
 
 import argparse
 import re
+from prettytable import PrettyTable, ALL
 from urllib.parse import urlparse
 
 from orpheus.core import *
@@ -118,16 +119,23 @@ def main():
                     if lucky_mode:
                         selection = 0
                     else:
+                        # use hrules=ALL ?
+                        search_table = PrettyTable(align='l')
+                        search_table.field_names = ['#', 'Name', 'Artist(s)', 'Details', 'Year', 'Duration']
                         for index, item in enumerate(items, start=1):
-                            additional_details = '[E] ' if item.explicit else ''
-                            additional_details += f'[{beauty_format_seconds(item.duration)}] ' if item.duration else ''
-                            additional_details += f'[{item.year}] ' if item.year else ''
-                            additional_details += ' '.join([f'[{i}]' for i in item.additional]) if item.additional else ''
+                            additional_details = ['E'] if item.explicit else []
+                            additional_details += item.additional if item.additional else ''
+                            artists = []
                             if query_type is not DownloadTypeEnum.artist:
                                 artists = ', '.join(item.artists) if item.artists is list else item.artists
-                                print(f'{str(index)}. {item.name} - {", ".join(artists)} {additional_details}')
-                            else:
-                                print(f'{str(index)}. {item.name} {additional_details}')
+
+                            search_table.add_row([index, format_line(item.name), format_line(', '.join(artists)),
+                                                  ', '.join(additional_details), item.year,
+                                                  beauty_format_seconds(item.duration) if item.duration else ''])
+
+                        # print the table with a fancy header
+                        search_table.title = f'Search results for {query_type.name}: {query}'
+                        print(search_table)
                         
                         selection_input = input('Selection: ')
                         if selection_input.lower() in ['e', 'q', 'x', 'exit', 'quit']: exit()

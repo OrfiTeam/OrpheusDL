@@ -7,3 +7,4 @@ tqdm>=4.60.0
 mutagen>=1.45.1
 ffmpeg-python>=0.2.0
 m3u8>=2.0.0
+prettytable>=3.4.0
