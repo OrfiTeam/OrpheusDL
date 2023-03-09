@@ -22,13 +22,20 @@ def create_requests_session():
 sanitise_name = lambda name : re.sub(r'[:]', ' - ', re.sub(r'[\\/*?"<>|$]', '', re.sub(r'[ \t]+$', '', str(name).rstrip()))) if name else ''
 
 
-def fix_file_limit(path: str, file_limit=250):
+def fix_byte_limit(path: str, byte_limit=250):
     # only needs the relative path, the abspath uses already existing folders
     rel_path = os.path.relpath(path).replace('\\', '/')
-    # iterate over all folders and file and check for a file_limit violation
-    split_path = [folder[:file_limit] if len(folder) > file_limit else folder for folder in rel_path.split('/')]
-    # join the split_path together
-    return '/'.join(split_path)
+
+    # split path into directory and filename
+    directory, filename = os.path.split(rel_path)
+
+    # truncate filename if its byte size exceeds the byte_limit
+    filename_bytes = filename.encode('utf-8')
+    fixed_bytes = filename_bytes[:byte_limit]
+    fixed_filename = fixed_bytes.decode('utf-8', 'ignore')
+
+    # join the directory and truncated filename together
+    return directory + '/' + fixed_filename
 
 
 r_session = create_requests_session()
