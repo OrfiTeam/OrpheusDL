@@ -404,8 +404,7 @@ def orpheus_core_download(orpheus_session: Orpheus, media_to_download, third_par
                 else:
                     raise Exception(f'\tUnknown media type "{mediatype}"')
 
-    if os.path.exists('temp'):
-        if not os.listdir('temp'): # Only if the temporary directory is empty
+    if os.path.isdir('temp') and not os.listdir('temp'): # Only if the temporary directory is empty
             shutil.rmtree('temp') # Remove temporary directory
         else:
             print(f'=== The temporary folder is not empty ==={os.linesep}=== The temporary folder will not be deleted ==={os.linesep}=== Another instance of OrpheusDL is likely running ===')
