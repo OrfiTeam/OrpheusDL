@@ -107,7 +107,7 @@ def silentremove(filename):
 def read_temporary_setting(settings_location, module, root_setting=None, setting=None, global_mode=False):
     temporary_settings = pickle.load(open(settings_location, 'rb'))
     module_settings = temporary_settings['modules'][module] if module in temporary_settings['modules'] else None
-    
+
     if module_settings:
         if global_mode:
             session = module_settings
@@ -122,7 +122,7 @@ def read_temporary_setting(settings_location, module, root_setting=None, setting
         else:
             return session[root_setting] if root_setting in session else None
     elif root_setting and not session:
-        raise Exception('Module does not use temporary settings') 
+        raise Exception('Module does not use temporary settings')
     else:
         return session
 
@@ -146,7 +146,11 @@ def set_temporary_setting(settings_location, module, root_setting, setting=None,
         session[root_setting] = value
     pickle.dump(temporary_settings, open(settings_location, 'wb'))
 
-create_temp_filename = lambda : f'temp/{os.urandom(16).hex()}'
+def share_UUID(UUID_value):
+    global UUID
+    UUID = UUID_value
+
+create_temp_filename = lambda : f'temp{UUID}/{os.urandom(16).hex()}'
 
 def save_to_temp(input: bytes):
     location = create_temp_filename()
