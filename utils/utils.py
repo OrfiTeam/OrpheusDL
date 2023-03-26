@@ -146,11 +146,11 @@ def set_temporary_setting(settings_location, module, root_setting, setting=None,
         session[root_setting] = value
     pickle.dump(temporary_settings, open(settings_location, 'wb'))
 
-def share_UUID(UUID_value):
-    global UUID
-    UUID = UUID_value
+def share_temp_UUID(UUID_value):
+    global temp_UUID
+    temp_UUID = UUID_value
 
-create_temp_filename = lambda : f'temp{UUID}/{os.urandom(16).hex()}'
+create_temp_filename = lambda : f'{temp_UUID}/{os.urandom(16).hex()}'
 
 def save_to_temp(input: bytes):
     location = create_temp_filename()
