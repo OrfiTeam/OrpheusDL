@@ -10,16 +10,16 @@ from orpheus.music_downloader import beauty_format_seconds
 
 def main():
     print('''
-   ____             _                    _____  _      
-  / __ \           | |                  |  __ \| |     
- | |  | |_ __ _ __ | |__   ___ _   _ ___| |  | | |     
- | |  | | '__| '_ \| '_ \ / _ \ | | / __| |  | | |     
- | |__| | |  | |_) | | | |  __/ |_| \__ \ |__| | |____ 
+   ____             _                    _____  _
+  / __ \           | |                  |  __ \| |
+ | |  | |_ __ _ __ | |__   ___ _   _ ___| |  | | |
+ | |  | | '__| '_ \| '_ \ / _ \ | | / __| |  | | |
+ | |__| | |  | |_) | | | |  __/ |_| \__ \ |__| | |____
   \____/|_|  | .__/|_| |_|\___|\__,_|___/_____/|______|
-             | |                                       
-             |_|                                       
+             | |
+             |_|
              \n''')
-    
+
     help_ = 'Use "settings [option]" for orpheus controls (coreupdate, fullupdate, modinstall), "settings [module]' \
            '[option]" for module specific options (update, test, setup), searching by "[search/luckysearch] [module]' \
            '[track/artist/playlist/album] [query]", or just putting in urls. (you may need to wrap the URLs in double' \
@@ -108,7 +108,7 @@ def main():
                     except KeyError:
                         raise Exception(f'{args.arguments[2].lower()} is not a valid search type! Choose {media_types}')
                     lucky_mode = True if orpheus_mode == 'luckysearch' else False
-                    
+
                     query = ' '.join(args.arguments[3:])
                     module = orpheus.load_module(modulename)
                     items = module.search(query_type, query, limit = (1 if lucky_mode else orpheus.settings['global']['general']['search_limit']))
@@ -128,7 +128,7 @@ def main():
                                 print(f'{str(index)}. {item.name} - {", ".join(artists)} {additional_details}')
                             else:
                                 print(f'{str(index)}. {item.name} {additional_details}')
-                        
+
                         selection_input = input('Selection: ')
                         if selection_input.lower() in ['e', 'q', 'x', 'exit', 'quit']: exit()
                         if not selection_input.isdigit(): raise Exception('Input a number')
@@ -182,14 +182,15 @@ def main():
                         if not components or len(components) <= 2:
                             print(f'\tInvalid URL: "{link}"')
                             exit() # TODO: replace with InvalidInput
-                        
+
                         url_constants = orpheus.module_settings[service_name].url_constants
                         if not url_constants:
                             url_constants = {
                                 'track': DownloadTypeEnum.track,
                                 'album': DownloadTypeEnum.album,
                                 'playlist': DownloadTypeEnum.playlist,
-                                'artist': DownloadTypeEnum.artist
+                                'artist': DownloadTypeEnum.artist,
+                                'label': DownloadTypeEnum.label
                             }
 
                         type_matches = [media_type for url_check, media_type in url_constants.items() if url_check in components]
