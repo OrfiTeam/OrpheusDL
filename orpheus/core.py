@@ -401,6 +401,8 @@ def orpheus_core_download(orpheus_session: Orpheus, media_to_download, third_par
                     downloader.download_playlist(media_id, extra_kwargs=media.extra_kwargs)
                 elif mediatype is DownloadTypeEnum.artist:
                     downloader.download_artist(media_id, extra_kwargs=media.extra_kwargs)
+                elif mediatype is DownloadTypeEnum.label:
+                    downloader.download_label(media_id, extra_kwargs=media.extra_kwargs)
                 else:
                     raise Exception(f'\tUnknown media type "{mediatype}"')
 
