@@ -302,7 +302,12 @@ class Downloader:
                 track_info.tags.track_number = track_index
             if number_of_tracks:
                 track_info.tags.total_tracks = number_of_tracks
-        zfill_number = len(str(track_info.tags.total_tracks)) if self.download_mode is not DownloadTypeEnum.track else 1
+        
+        if (self.global_settings['formatting']['enable_fixed_zfill']):
+            zfill_number = self.global_settings['formatting']['fixed_zfill']
+        else:
+            zfill_number = len(str(track_info.tags.total_tracks)) if self.download_mode is not DownloadTypeEnum.track else 1
+            
         zfill_lambda = lambda input : sanitise_name(str(input)).zfill(zfill_number) if input is not None else None
 
         # Separate copy of tags for formatting purposes
