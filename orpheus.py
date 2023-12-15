@@ -9,7 +9,7 @@ from orpheus.music_downloader import beauty_format_seconds
 
 
 def main():
-    print('''
+    print(r'''
    ____             _                    _____  _      
   / __ \           | |                  |  __ \| |     
  | |  | |_ __ _ __ | |__   ___ _   _ ___| |  | | |     
@@ -18,7 +18,8 @@ def main():
   \____/|_|  | .__/|_| |_|\___|\__,_|___/_____/|______|
              | |                                       
              |_|                                       
-             \n''')
+             
+            ''')
     
     help_ = 'Use "settings [option]" for orpheus controls (coreupdate, fullupdate, modinstall), "settings [module]' \
            '[option]" for module specific options (update, test, setup), searching by "[search/luckysearch] [module]' \
